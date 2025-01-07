@@ -19,8 +19,8 @@ namespace PROJECT_NAME
 // the necessary 'evil'
 int command_id{0};
 bool toggle_action_state{false};
-constexpr auto command_name = "AK5K_" STRINGIZE(PROJECT_NAME) "_COMMAND";
-constexpr auto action_name = "ak5k: " STRINGIZE(PROJECT_NAME);
+constexpr const char *command_name = "AK5K_" STRINGIZE(PROJECT_NAME) "_COMMAND";
+constexpr const char *action_name = "ak5k: " STRINGIZE(PROJECT_NAME);
 custom_action_register_t action = {0, command_name, action_name, nullptr};
 
 // hInstance is declared in header file my_plugin.hpp
@@ -36,7 +36,7 @@ void MainFunctionOfMyPlugin()
 
 // c++11 trailing return type syntax
 // REAPER calls this to check my plugin toggle state
-auto ToggleActionCallback(int command) -> int
+int ToggleActionCallback(int command)
 {
     if (command != command_id)
     {
@@ -190,8 +190,7 @@ void Register()
 }
 
 // shutdown, time to exit
-// modern C++11 syntax
-auto Unregister() -> void
+void Unregister()
 {
     plugin_register("-custom_action", &action);
     plugin_register("-toggleaction", (void*)ToggleActionCallback);

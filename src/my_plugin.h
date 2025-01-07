@@ -9,7 +9,7 @@
 namespace PROJECT_NAME
 {
 extern REAPER_PLUGIN_HINSTANCE hInstance; // used for dialogs, if any
-auto Register() -> void;
-auto Unregister() -> void;
+void Register();
+void Unregister();
 
 } // namespace PROJECT_NAME

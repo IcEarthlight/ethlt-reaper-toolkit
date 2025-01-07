@@ -58,14 +58,17 @@ FetchContent_Declare(GSL
 
 FetchContent_MakeAvailable(reaper-sdk GSL WDL)
 
-# symlink WDL to reaper-sdk
-execute_process(
-    COMMAND ${CMAKE_COMMAND} -E create_symlink
-            # source
-            "${PROJECT_LIB_DIR}/WDL/WDL"
-            # target
-            ${PROJECT_LIB_DIR}/reaper-sdk/WDL
-)
+if(WIN32)
+    file(COPY "${PROJECT_LIB_DIR}/WDL/WDL" DESTINATION "${PROJECT_LIB_DIR}/reaper-sdk")
+else()
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+                # source
+                "${PROJECT_LIB_DIR}/WDL/WDL"
+                # target
+                ${PROJECT_LIB_DIR}/reaper-sdk/WDL
+    )
+endif()
 
 if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
@@ -200,13 +203,14 @@ else()
 endif()
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  if(WIN32)
-    set(USER_CONFIG_DIR "$ENV{APPDATA}")
-  elseif(APPLE)
-    set(USER_CONFIG_DIR "~/Library/Application Support")
-  else()
-    set(USER_CONFIG_DIR "~/.config")
-  endif()
+  # if(WIN32)
+  #   set(USER_CONFIG_DIR "$ENV{APPDATA}")
+  # elseif(APPLE)
+  #   set(USER_CONFIG_DIR "~/Library/Application Support")
+  # else()
+  #   set(USER_CONFIG_DIR "~/.config")
+  # endif()
+  set(USER_CONFIG_DIR "D:")
 
   set(CMAKE_INSTALL_PREFIX "${USER_CONFIG_DIR}/REAPER" CACHE PATH
     "REAPER resource path where to install ReaPack" FORCE)
@@ -266,21 +270,27 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
-    execute_process(
-        COMMAND ${CMAKE_COMMAND} -E create_symlink
-                # source
-                "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
-                # target
-                "${CMAKE_CURRENT_BINARY_DIR}/link_readme.txt")
+    if(WIN32)
+        file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/README.md" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+        file(RENAME "${CMAKE_CURRENT_BINARY_DIR}/README.md" "${CMAKE_CURRENT_BINARY_DIR}/link_readme.txt")
+    else()
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E create_symlink
+                    "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
+                    "${CMAKE_CURRENT_BINARY_DIR}/link_readme.txt")
+    endif()
     set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_BINARY_DIR}/link_readme.txt")
 endif()
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
-    execute_process(
-        COMMAND ${CMAKE_COMMAND} -E create_symlink
-                # source
-                "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
-                # target
-                "${CMAKE_CURRENT_BINARY_DIR}/link_license.txt")
+    if(WIN32)
+        file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+        file(RENAME "${CMAKE_CURRENT_BINARY_DIR}/LICENSE" "${CMAKE_CURRENT_BINARY_DIR}/link_license.txt")
+    else()
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E create_symlink
+                    "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
+                    "${CMAKE_CURRENT_BINARY_DIR}/link_license.txt")
+    endif()
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_BINARY_DIR}/link_license.txt")
 endif()
 
