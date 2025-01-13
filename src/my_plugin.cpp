@@ -21,26 +21,25 @@ struct ActionInfo {
     const char* action_name;
     bool run_on_timer;  // Individual timer setting for each action
     custom_action_register_t action;
+    std::function<void()> onaction; // Function to call when action triggered
 };
 
 // Define your actions here with individual timer settings
 std::vector<ActionInfo> actions = {
-    {0, false, "ETHLT_SMART_VOLUP_COMMAND",   "ethlt: Smart Volume up",   false, {0}},
-    {0, false, "ETHLT_SMART_VOLDOWN_COMMAND", "ethlt: Smart Volume down", false, {0}}
+    {0, false, "ETHLT_SMART_VOLUP_COMMAND",   "ethlt: Smart Volume up",   false, {0}, []() {
+        // Smart volume up implementation
+        ShowConsoleMsg("Smart volume up\n");
+    }},
+    {0, false, "ETHLT_SMART_VOLDOWN_COMMAND", "ethlt: Smart Volume down", false, {0}, []() {
+        // Smart volume down implementation
+        ShowConsoleMsg("Smart volume down\n");
+    }}
 };
 
 // hInstance is declared in header file my_plugin.hpp
 // defined here
 REAPER_PLUGIN_HINSTANCE hInstance{nullptr}; // used for dialogs, if any
 
-// the main function of my plugin
-// gets called via callback or timer
-void MainFunctionOfMyPlugin()
-{
-    ShowConsoleMsg("hello, world\n");
-}
-
-// c++11 trailing return type syntax
 // REAPER calls this to check my plugin toggle state
 int ToggleActionCallback(int command)
 {
@@ -61,22 +60,22 @@ bool OnAction(KbdSectionInfo* sec, int command, int val, int valhw, int relmode,
     // treat unused variables 'pedantically'
     (void)sec; (void)val; (void)valhw; (void)relmode; (void)hwnd;
 
-    for (auto& action_info : actions) {
+    for (ActionInfo& action_info : actions) {
         // check command
         if (command != action_info.command_id)
             continue;
         
-        // register my plugins main function to timer
+        // register action-specific function to timer
         if (action_info.run_on_timer) {
             action_info.toggle_state = !action_info.toggle_state; // flip state on/off
 
             if (action_info.toggle_state) {
-                plugin_register("timer", (void*)MainFunctionOfMyPlugin); // "reaper.defer(main)"
+                plugin_register("timer", (void*)action_info.onaction.target<void()>()); // "reaper.defer(action)"
             } else {
-                plugin_register("-timer", (void*)MainFunctionOfMyPlugin); // "reaper.atexit(shutdown)"
+                plugin_register("-timer", (void*)action_info.onaction.target<void()>()); // "reaper.atexit(shutdown)" 
             }
         } else {
-            MainFunctionOfMyPlugin(); // else call main function once
+            action_info.onaction(); // Call the action-specific function
         }
         return true;
     }
@@ -84,7 +83,7 @@ bool OnAction(KbdSectionInfo* sec, int command, int val, int valhw, int relmode,
 }
 
 // definition string for example API function
-auto reascript_api_function_example_defstring =
+const char *reascript_api_function_example_defstring =
     "int" // return type
     "\0"  // delimiter ('separator')
     // input parameter types
@@ -133,7 +132,7 @@ int ReaScriptAPIFunctionExample(
     return whole_number * whole_number;
 }
 
-auto defstring_GetVersion =
+const char *defstring_GetVersion =
     "void" // return type
     "\0"   // delimiter ('separator')
     // input parameter types
