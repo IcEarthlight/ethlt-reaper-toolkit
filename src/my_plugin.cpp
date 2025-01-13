@@ -9,19 +9,25 @@
 // register main function on timer
 // true or false
 #define API_ID MYAPI
-#define RUN_ON_TIMER true
 
 // confine my plugin to namespace
 namespace PROJECT_NAME
 {
 
-// some global non-const variables
-// the necessary 'evil'
-int command_id{0};
-bool toggle_action_state{false};
-constexpr const char *command_name = "AK5K_" STRINGIZE(PROJECT_NAME) "_COMMAND";
-constexpr const char *action_name = "ak5k: " STRINGIZE(PROJECT_NAME);
-custom_action_register_t action = {0, command_name, action_name, nullptr};
+struct ActionInfo {
+    int command_id;
+    bool toggle_state;
+    const char* command_name;
+    const char* action_name;
+    bool run_on_timer;  // Individual timer setting for each action
+    custom_action_register_t action;
+};
+
+// Define your actions here with individual timer settings
+std::vector<ActionInfo> actions = {
+    {0, false, "ETHLT_SMART_VOLUP_COMMAND",   "ethlt: Smart Volume up",   false, {0}},
+    {0, false, "ETHLT_SMART_VOLDOWN_COMMAND", "ethlt: Smart Volume down", false, {0}}
+};
 
 // hInstance is declared in header file my_plugin.hpp
 // defined here
@@ -38,56 +44,43 @@ void MainFunctionOfMyPlugin()
 // REAPER calls this to check my plugin toggle state
 int ToggleActionCallback(int command)
 {
-    if (command != command_id)
-    {
-        // not quite our command_id
-        return -1;
+    for (ActionInfo& action_info : actions) {
+        if (command == action_info.command_id) {
+            if (action_info.toggle_state)
+                return 1;
+            return 0;
+        }
     }
-    if (toggle_action_state) // if toggle_action_state == true
-        return 1;
-    return 0;
+    // not quite our command_id
+    return -1;
 }
 
 // this gets called when my plugin action is run (e.g. from action list)
 bool OnAction(KbdSectionInfo* sec, int command, int val, int valhw, int relmode, HWND hwnd)
 {
     // treat unused variables 'pedantically'
-    (void)sec;
-    (void)val;
-    (void)valhw;
-    (void)relmode;
-    (void)hwnd;
+    (void)sec; (void)val; (void)valhw; (void)relmode; (void)hwnd;
 
-    // check command
-    if (command != command_id)
-        return false;
+    for (auto& action_info : actions) {
+        // check command
+        if (command != action_info.command_id)
+            continue;
+        
+        // register my plugins main function to timer
+        if (action_info.run_on_timer) {
+            action_info.toggle_state = !action_info.toggle_state; // flip state on/off
 
-    // depending on RUN_ON_TIMER #definition,
-    // register my plugins main function to timer
-    if (RUN_ON_TIMER) // RUN_ON_TIMER is true or false
-    {
-        // flip state on/off
-        toggle_action_state = !toggle_action_state;
-
-        if (toggle_action_state) // if toggle_action_state == true
-        {
-            // "reaper.defer(main)"
-            plugin_register("timer", (void*)MainFunctionOfMyPlugin);
+            if (action_info.toggle_state) {
+                plugin_register("timer", (void*)MainFunctionOfMyPlugin); // "reaper.defer(main)"
+            } else {
+                plugin_register("-timer", (void*)MainFunctionOfMyPlugin); // "reaper.atexit(shutdown)"
+            }
+        } else {
+            MainFunctionOfMyPlugin(); // else call main function once
         }
-        else
-        {
-            // "reaper.atexit(shutdown)"
-            plugin_register("-timer", (void*)MainFunctionOfMyPlugin);
-            // shutdown stuff
-        }
+        return true;
     }
-    else
-    {
-        // else call main function once
-        MainFunctionOfMyPlugin();
-    }
-
-    return true;
+    return false;
 }
 
 // definition string for example API function
@@ -166,12 +159,21 @@ void GetVersion(int* majorOut, int* minorOut, int* patchOut, int* tweakOut, char
 // function to register my plugins 'stuff' with REAPER
 void Register()
 {
-    // register action name and get command_id
-    command_id = plugin_register("custom_action", &action);
-
-    // register action on/off state and callback function
-    if (RUN_ON_TIMER)
+    bool anyone_run_on_timer{false};
+    // register each action
+    for (ActionInfo& action_info : actions) {
+        // register action name and get command_id
+        action_info.action = {0, action_info.command_name, action_info.action_name, nullptr};
+        action_info.command_id = plugin_register("custom_action", &action_info.action);
+        
+        // register action on/off state and callback function
+        if (action_info.run_on_timer) {
+            anyone_run_on_timer = true;
+        }
+    }
+    if (anyone_run_on_timer) {
         plugin_register("toggleaction", (void*)ToggleActionCallback);
+    }
 
     // register run action/command
     plugin_register("hookcommand2", (void*)OnAction);
@@ -192,7 +194,10 @@ void Register()
 // shutdown, time to exit
 void Unregister()
 {
-    plugin_register("-custom_action", &action);
+    // unregister each action
+    for (ActionInfo& action_info : actions) {
+        plugin_register("-custom_action", &action_info.action);
+    }
     plugin_register("-toggleaction", (void*)ToggleActionCallback);
     plugin_register("-hookcommand2", (void*)OnAction);
 }
