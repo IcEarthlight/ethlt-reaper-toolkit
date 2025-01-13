@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(MyPlugin VERSION 0.0.1 LANGUAGES C CXX)
+project(EthltReaperToolkit VERSION 0.0.1 LANGUAGES C CXX)
 
 find_package(Git)
 if(GIT_FOUND)
@@ -227,7 +227,7 @@ endif()
 STRING(TOLOWER "${ARCH_NAME}" ARCH_NAME)
 set_target_properties(${PROJECT_NAME} PROPERTIES
   PREFIX "" # disable the "lib" prefix
-  OUTPUT_NAME "reaper_${PROJECT_NAME}-${ARCH_NAME}"
+  OUTPUT_NAME "reaper_ethlt-reaper-toolkit-${ARCH_NAME}"
 )
 
 set(REAPER_USER_PLUGINS "UserPlugins")
