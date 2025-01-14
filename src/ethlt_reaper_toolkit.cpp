@@ -2,6 +2,10 @@
 #include "reaper_vararg.hpp"
 #include <gsl/gsl>
 
+#include "actions/smart_vol_adjust.h"
+#include "actions/smart_midi_vel_adjust.h"
+#include "actions/test.h"
+
 #define STRINGIZE_DEF(x) #x
 #define STRINGIZE(x) STRINGIZE_DEF(x)
 #define min(a, b) ((a) < (b) ? (a) : (b))
@@ -14,26 +18,38 @@
 namespace PROJECT_NAME
 {
 
+enum class SectionId {
+    Main = 0,
+    MainAlt = 100,
+    MidiEditor = 32060,
+    MidiEventListEditor = 32061,
+    MidiInlineEditor = 32062,
+    MediaExplorer = 32063
+};
+
 struct ActionInfo {
     int command_id;
     bool toggle_state;
+    SectionId section_id;
     const char* command_name;
     const char* action_name;
-    bool run_on_timer;  // Individual timer setting for each action
+    bool run_on_timer;  // individual timer setting for each action
     custom_action_register_t action;
-    std::function<void()> onaction; // Function to call when action triggered
+    std::function<void()> onaction; // function to call when action triggered
 };
 
 // Define your actions here with individual timer settings
 std::vector<ActionInfo> actions = {
-    {0, false, "ETHLT_SMART_VOLUP_COMMAND",   "ethlt: Smart Volume up",   false, {0}, []() {
-        // Smart volume up implementation
-        ShowConsoleMsg("Smart volume up\n");
-    }},
-    {0, false, "ETHLT_SMART_VOLDOWN_COMMAND", "ethlt: Smart Volume down", false, {0}, []() {
-        // Smart volume down implementation
-        ShowConsoleMsg("Smart volume down\n");
-    }}
+    {0, false, SectionId::Main,                "ETHLT_SMART_VOLUP_COMMAND_MAIN",            "ethlt: Smart Volume up (Main Section)",        false, {0}, SmartVolAdjust<true>},
+    {1, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLUP_COMMAND_MIDI_EDITOR",     "ethlt: Smart Volume up (Midi Editor)",         false, {0}, SmartMidiVelAdjust<true>},
+    {2, false, SectionId::Main,                "ETHLT_SMART_VOLDOWN_COMMAND_MAIN",          "ethlt: Smart Volume down (Main Section)",      false, {0}, SmartVolAdjust<false>},
+    {3, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLDOWN_COMMAND_MIDI_EDITOR",   "ethlt: Smart Volume down (Midi Editor)",       false, {0}, SmartMidiVelAdjust<false>},
+    {4, false, SectionId::Main,                "ETHLT_TEST_COMMAND_MAIN",                   "ethlt: Test (Main Section)",                   false, {0}, Test},
+    {5, false, SectionId::MainAlt,             "ETHLT_TEST_COMMAND_MAIN_ALT",               "ethlt: Test (Main Alt Section)",               false, {0}, Test},
+    {6, false, SectionId::MidiEditor,          "ETHLT_TEST_COMMAND_MIDI_EDITOR",            "ethlt: Test (Midi Editor Section)",            false, {0}, Test},
+    {7, false, SectionId::MidiEventListEditor, "ETHLT_TEST_COMMAND_MIDI_EVENT_LIST_EDITOR", "ethlt: Test (Midi Event List Editor Section)", false, {0}, Test},
+    {8, false, SectionId::MidiInlineEditor,    "ETHLT_TEST_COMMAND_MIDI_INLINE_EDITOR",     "ethlt: Test (Midi Inline Editor Section)",     false, {0}, Test},
+    {9, false, SectionId::MediaExplorer,       "ETHLT_TEST_COMMAND_MEDIA_EXPLORER",         "ethlt: Test (Media Explorer Section)",         false, {0}, Test}
 };
 
 // hInstance is declared in header file my_plugin.hpp
@@ -75,6 +91,7 @@ bool OnAction(KbdSectionInfo* sec, int command, int val, int valhw, int relmode,
                 plugin_register("-timer", (void*)action_info.onaction.target<void()>()); // "reaper.atexit(shutdown)" 
             }
         } else {
+            ShowConsoleMsg((std::string(action_info.action_name) + " called\n").c_str());
             action_info.onaction(); // Call the action-specific function
         }
         return true;
@@ -162,7 +179,7 @@ void Register()
     // register each action
     for (ActionInfo& action_info : actions) {
         // register action name and get command_id
-        action_info.action = {0, action_info.command_name, action_info.action_name, nullptr};
+        action_info.action = {static_cast<int>(action_info.section_id), action_info.command_name, action_info.action_name, nullptr};
         action_info.command_id = plugin_register("custom_action", &action_info.action);
         
         // register action on/off state and callback function
