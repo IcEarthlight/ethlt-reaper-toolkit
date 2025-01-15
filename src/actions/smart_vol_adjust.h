@@ -32,13 +32,18 @@ constexpr inline int extract_index(const char* str, const size_t len) noexcept
     return n;
 }
 
+// adjust_type: 0: normal
+//              1: volume [0, 2]
+//              2: volume [0, 1]
+//              3: mute {0, 1}
 constexpr inline bool extract_envelope_info(
     const char *str,
     const size_t len,
     char *env_type,
     double *min_val,
     double *max_val,
-    double *mid_val
+    double *mid_val,
+    int *adjust_type
 ) noexcept
 {
     if (len < 1 || str[0] != '<')
@@ -64,7 +69,7 @@ constexpr inline bool extract_envelope_info(
                strcmp(env_type, "VOLENV2") == 0 ||
                strcmp(env_type, "AUXVOLENV") == 0) {
 
-        *min_val = 0.0; *max_val = 2.0; *mid_val = 1.0; return true;
+        *min_val = 0.0; *max_val = 2.0; *mid_val = 1.0; *adjust_type = 1; return true;
 
     } else if (strcmp(env_type, "PANENV") == 0 ||
                strcmp(env_type, "PANENV2") == 0 ||
@@ -72,14 +77,16 @@ constexpr inline bool extract_envelope_info(
                strcmp(env_type, "WIDTHENV") == 0 ||
                strcmp(env_type, "WIDTHENV2") == 0) {
 
-        *min_val = -1.0; *max_val = 1.0; *mid_val = 0.0; return true;
+        *min_val = -1.0; *max_val = 1.0; *mid_val = 0.0; *adjust_type = 0; return true;
 
     } else if (strcmp(env_type, "MUTEENV") == 0 ||
-               strcmp(env_type, "VOLENV3") == 0 ||
                strcmp(env_type, "AUXMUTEENV") == 0) {
 
-        *min_val = 0.0; *max_val = 1.0; *mid_val = 0.5; return true;
+        *min_val = 0.0; *max_val = 1.0; *mid_val = 0.5; *adjust_type = 3; return true;
 
+    } else if (strcmp(env_type, "VOLENV3") == 0) {
+
+        *min_val = 0.0; *max_val = 1.0; *mid_val = 0.5; *adjust_type = 2; return true;
     }
 
     return false;
@@ -97,17 +104,28 @@ double adjust_envpt_value(
     const double val,
     const double min_val,
     const double max_val,
-    const double mid_val
+    const double mid_val,
+    const int adjust_type = 0
 ) noexcept
 {
     static constexpr int STEP_NUM = 8;
 
     // common case
-    if (min_val == 0 && max_val == 1 && mid_val == 0.5)
+    if (min_val == 0 && max_val == 1 && mid_val == 0.5 && adjust_type == 0)
         return std::clamp(
             floor(STEP_NUM * val + (increase ? 1.5 : -0.5)) / STEP_NUM,
             0.0, 1.0
         );
+
+    // special case
+    switch (adjust_type) {
+    case 1:
+        return std::min(2.0, adjust_volume<increase>(val));
+    case 2:
+        return std::min(1.0, adjust_volume<increase>(val));
+    case 3:
+        return increase;
+    }
     
     // volume smoother
     if (min_val == -60 && max_val == 12 && mid_val == 0)
@@ -224,14 +242,15 @@ int adjust_all_selected_envpoints_value(TrackEnvelope* env, char* env_type)
         if (!GetEnvelopeStateChunk(env, env_state_chunk, sizeof(env_state_chunk), true))
             continue;
         
+        int adjust_type;
         double min_val, max_val, mid_val;
-        if (!extract_envelope_info(env_state_chunk, strlen(env_state_chunk), env_type, &min_val, &max_val, &mid_val))
+        if (!extract_envelope_info(env_state_chunk, strlen(env_state_chunk), env_type, &min_val, &max_val, &mid_val, &adjust_type))
             continue;
         
         static bool nosort = true;
         int scale_mode = GetEnvelopeScalingMode(env);
         double scaled_val = ScaleFromEnvelopeMode(scale_mode, point_val);
-        scaled_val = adjust_envpt_value<increase>(scaled_val, min_val, max_val, mid_val);
+        scaled_val = adjust_envpt_value<increase>(scaled_val, min_val, max_val, mid_val, adjust_type);
         point_val = ScaleToEnvelopeMode(scale_mode, scaled_val);
         modified_count += SetEnvelopePoint(env, i, nullptr, &point_val, nullptr, nullptr, &selected, &nosort);
     }

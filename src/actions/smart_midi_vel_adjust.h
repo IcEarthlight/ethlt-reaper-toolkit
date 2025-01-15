@@ -48,7 +48,7 @@ inline int handle_midi_editor(bool increase)
 
     if (modified_notes_count) {
         MIDI_Sort(take);
-        ShowConsoleMsg((std::to_string(modified_notes_count) + " notes " + (increase ? "increased" : "decreased") + " velocity\n").c_str());
+        ShowConsoleMsg((std::to_string(modified_notes_count) + " " + (modified_notes_count == 1 ? "note" : "notes") + " " + (increase ? "increased" : "decreased") + " velocity\n").c_str());
     } else {
         ShowConsoleMsg("No notes selected\n");
     }
@@ -69,7 +69,9 @@ void SmartMidiVelAdjust()
         Undo_OnStateChange((
             (increase ? "Increase " : "Decrease ") + 
             std::to_string(modified_notes_count) + 
-            " MIDI Notes Velocity"
+            " MIDI " +
+            (modified_notes_count == 1 ? "Note" : "Notes") +
+            " Velocity"
         ).c_str());
     } else if (modified_notes_count == -1) {
         ShowConsoleMsg("No MIDI editor found\n");
