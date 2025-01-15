@@ -4,6 +4,8 @@
 #include "reaper_plugin_functions.h"
 #include <string>
 
+#include "actions/smart_midi_vel_adjust.h"
+
 namespace PROJECT_NAME
 {
 
@@ -65,7 +67,7 @@ constexpr inline bool extract_envelope_info(
 
         if (parsed >= 1) {
             sprintf(env_type, "PARMENV %s", param_name);
-            
+
             if (strcmp(param_name, "0:bypass") == 0 ||
                 strcmp(param_name, "2:delta") == 0) {
                 *adjust_type = 3;
@@ -282,20 +284,24 @@ int handle_arrange_view(int* modified_count, char* env_type)
     GetMousePosition(&ptrx, &ptry);
     *modified_count = 0;
 
+    // try to handle items
     MediaItem *item = GetItemFromPoint(ptrx, ptry, true, nullptr);
     if (item && IsMediaItemSelected(item)) {
         *modified_count = adjust_all_selected_items_volume<increase>();
         return 2;
     }
 
+    // try to find tracks
     char thing[12];
     MediaTrack *track = GetThingFromPoint(ptrx, ptry, thing, sizeof(thing));
     if (!track) {
-        adjust_system_volume<increase>();
+        if (!try_to_handle_midi_editor<increase>())
+            adjust_system_volume<increase>();
         *modified_count = 0;
         return 0;
     }
     
+    // try to handle env points
     if (strncmp(thing, "envelope", 8) == 0 || strncmp(thing, "envcp", 5) == 0) {
         int envidx = extract_index(thing, strlen(thing));
         TrackEnvelope* env = GetTrackEnvelope(track, envidx);
@@ -305,6 +311,7 @@ int handle_arrange_view(int* modified_count, char* env_type)
         }
     }
 
+    // try to handle single/selected tracks
     if (IsTrackSelected(track)) {
         *modified_count = adjust_all_selected_tracks_volume<increase>();
     } else {
@@ -319,12 +326,12 @@ int handle_arrange_view(int* modified_count, char* env_type)
 // Adjusts selected media items' or tracks' volume based on template parameter
 // @tparam increase If true, increases volume; if false, decreases volume
 template<bool increase>
-void SmartVolAdjust()
+void smart_vol_adjust()
 {
     PreventUIRefresh(1);
     int modified_count;
     char env_type[32];
-    // 1: tracks, 2: items, 3: envelope points
+    // 0: nothing,1: tracks, 2: items, 3: envelope points
     int modified_class = handle_arrange_view<increase>(&modified_count, env_type);
 
     if (modified_count > 0) {

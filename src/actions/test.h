@@ -5,5 +5,5 @@
 
 namespace PROJECT_NAME
 {
-    void Test();
+    void test();
 }

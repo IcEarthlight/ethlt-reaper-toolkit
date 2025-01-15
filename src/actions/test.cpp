@@ -93,7 +93,7 @@ bool active_midi_editor() {
 }
 
 // helper function to get element under cursor
-void PrintElementUnderPoint(int x, int y) {
+void print_element_under_point(int x, int y) {
     char buf[1024];
     sprintf(buf, "Cursor position: %d, %d\n", x, y);
     ShowConsoleMsg(buf);
@@ -113,8 +113,8 @@ void PrintElementUnderPoint(int x, int y) {
             if (env) {
                 char env_state_chunk[256];
                 if (GetEnvelopeStateChunk(env, env_state_chunk, sizeof(env_state_chunk), true)) {
-                    char env_type[32];
-                    double min_val, max_val, mid_val;
+                    // char env_type[32];
+                    // double min_val, max_val, mid_val;
                     // if (extract_envelope_info(env_state_chunk, strlen(env_state_chunk), env_type, &min_val, &max_val, &mid_val)) {
                     //     ShowConsoleMsg(("env_type: " + std::string(env_type) + "\n").c_str());
                     //     ShowConsoleMsg(("min_val: " + std::to_string(min_val) + "\n").c_str());
@@ -187,7 +187,7 @@ void PrintElementUnderPoint(int x, int y) {
     buf[0] = '\0'; // clear buf
 }
 
-void Test()
+void test()
 {
     POINT pt;
     if (!GetCursorPos(&pt)) {
@@ -197,7 +197,7 @@ void Test()
     if (active_midi_editor()) {
         ShowConsoleMsg("MIDI Editor is active\n");
     }
-    PrintElementUnderPoint(pt.x, pt.y);
+    print_element_under_point(pt.x, pt.y);
 }
 
 }

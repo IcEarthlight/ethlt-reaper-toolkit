@@ -40,16 +40,16 @@ struct ActionInfo {
 
 // define your actions here with individual timer settings
 std::vector<ActionInfo> actions = {
-    {0, false, SectionId::Main,                "ETHLT_SMART_VOLUP_COMMAND_MAIN",            "ethlt: Smart Volume up (Main Section)",        false, {0}, SmartVolAdjust<true>},
-    {1, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLUP_COMMAND_MIDI_EDITOR",     "ethlt: Smart Volume up (Midi Editor)",         false, {0}, SmartMidiVelAdjust<true>},
-    {2, false, SectionId::Main,                "ETHLT_SMART_VOLDOWN_COMMAND_MAIN",          "ethlt: Smart Volume down (Main Section)",      false, {0}, SmartVolAdjust<false>},
-    {3, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLDOWN_COMMAND_MIDI_EDITOR",   "ethlt: Smart Volume down (Midi Editor)",       false, {0}, SmartMidiVelAdjust<false>},
-    {4, false, SectionId::Main,                "ETHLT_TEST_COMMAND_MAIN",                   "ethlt: Test (Main Section)",                   false, {0}, Test},
-    {5, false, SectionId::MainAlt,             "ETHLT_TEST_COMMAND_MAIN_ALT",               "ethlt: Test (Main Alt Section)",               false, {0}, Test},
-    {6, false, SectionId::MidiEditor,          "ETHLT_TEST_COMMAND_MIDI_EDITOR",            "ethlt: Test (Midi Editor Section)",            false, {0}, Test},
-    {7, false, SectionId::MidiEventListEditor, "ETHLT_TEST_COMMAND_MIDI_EVENT_LIST_EDITOR", "ethlt: Test (Midi Event List Editor Section)", false, {0}, Test},
-    {8, false, SectionId::MidiInlineEditor,    "ETHLT_TEST_COMMAND_MIDI_INLINE_EDITOR",     "ethlt: Test (Midi Inline Editor Section)",     false, {0}, Test},
-    {9, false, SectionId::MediaExplorer,       "ETHLT_TEST_COMMAND_MEDIA_EXPLORER",         "ethlt: Test (Media Explorer Section)",         false, {0}, Test}
+    {0, false, SectionId::Main,                "ETHLT_SMART_VOLUP_COMMAND_MAIN",            "ethlt: Smart Volume up (Main Section)",        false, {0}, smart_vol_adjust<true>},
+    {1, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLUP_COMMAND_MIDI_EDITOR",     "ethlt: Smart Volume up (Midi Editor)",         false, {0}, smart_midi_vel_adjust<true>},
+    {2, false, SectionId::Main,                "ETHLT_SMART_VOLDOWN_COMMAND_MAIN",          "ethlt: Smart Volume down (Main Section)",      false, {0}, smart_vol_adjust<false>},
+    {3, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLDOWN_COMMAND_MIDI_EDITOR",   "ethlt: Smart Volume down (Midi Editor)",       false, {0}, smart_midi_vel_adjust<false>},
+    {4, false, SectionId::Main,                "ETHLT_TEST_COMMAND_MAIN",                   "ethlt: Test (Main Section)",                   false, {0}, test},
+    {5, false, SectionId::MainAlt,             "ETHLT_TEST_COMMAND_MAIN_ALT",               "ethlt: Test (Main Alt Section)",               false, {0}, test},
+    {6, false, SectionId::MidiEditor,          "ETHLT_TEST_COMMAND_MIDI_EDITOR",            "ethlt: Test (Midi Editor Section)",            false, {0}, test},
+    {7, false, SectionId::MidiEventListEditor, "ETHLT_TEST_COMMAND_MIDI_EVENT_LIST_EDITOR", "ethlt: Test (Midi Event List Editor Section)", false, {0}, test},
+    {8, false, SectionId::MidiInlineEditor,    "ETHLT_TEST_COMMAND_MIDI_INLINE_EDITOR",     "ethlt: Test (Midi Inline Editor Section)",     false, {0}, test},
+    {9, false, SectionId::MediaExplorer,       "ETHLT_TEST_COMMAND_MEDIA_EXPLORER",         "ethlt: Test (Media Explorer Section)",         false, {0}, test}
 };
 
 // hInstance is declared in header file my_plugin.hpp
