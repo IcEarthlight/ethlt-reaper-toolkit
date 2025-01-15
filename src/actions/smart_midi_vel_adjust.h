@@ -32,7 +32,7 @@ inline int handle_midi_editor(bool increase)
     int notecnt, ccevtcnt, textsyxevtcnt;
     MIDI_CountEvts(take, &notecnt, &ccevtcnt, &textsyxevtcnt);
 
-    static const bool NOSORT_TRUE = true;
+    static constexpr bool NOSORT_TRUE = true;
     for (int i = 0; i < notecnt; i++) {
         bool selected;
         int vel;

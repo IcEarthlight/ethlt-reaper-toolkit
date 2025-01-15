@@ -10,40 +10,279 @@ namespace PROJECT_NAME
 namespace
 {
 
-inline double increase_volume(double vol) noexcept
-{
-    double log_vol = log2(vol) / 2;
-    return pow(sqrt(2), floor(log_vol + 1.5));
+constexpr inline int ipow(int base, int exp) noexcept {
+    int result = 1;
+    while (exp > 0) {
+        if (exp & 1) result *= base;
+        base *= base;
+        exp >>= 1;
+    }
+    return result;
 }
 
-inline double decrease_volume(double vol) noexcept
+constexpr inline int extract_index(const char* str, const size_t len) noexcept
 {
-    double log_vol = log2(vol) / 2;
-    return pow(sqrt(2), floor(log_vol - 0.5));
+    int n = 0;
+    for (int i = 0; i < len; i++) {
+        char c = str[len - i - 1];
+        if (isdigit(c))
+            n += (c - '0') * ipow(10, i);
+        else break;
+    }
+    return n;
 }
 
-inline void increase_track_volume(MediaTrack *track)
+constexpr inline bool extract_envelope_info(
+    const char *str,
+    const size_t len,
+    char *env_type,
+    double *min_val,
+    double *max_val,
+    double *mid_val
+) noexcept
 {
-    double vol = GetMediaTrackInfo_Value(track, "D_VOL");
-    SetMediaTrackInfo_Value(track, "D_VOL", increase_volume(vol));
+    if (len < 1 || str[0] != '<')
+        return false;
+
+    // find first space
+    const char *end = str;
+    while (*end && !isspace(*end)) end++;
+    if (!*end) return false;
+
+    // assign env_type
+    size_t env_type_len = end - str - 1;
+    strncpy(env_type, str + 1, env_type_len);
+    env_type[env_type_len] = '\0';
+
+    if (strcmp(env_type, "PARMENV") == 0) {
+        char param_name[32] = {};
+        int parsed = sscanf(end + 1, "%s %lf %lf %lf", param_name, min_val, max_val, mid_val);
+        sprintf(env_type, "PARMENV %s", param_name);
+        return parsed == 4;
+    
+    } else if (strcmp(env_type, "VOLENV") == 0 ||
+               strcmp(env_type, "VOLENV2") == 0 ||
+               strcmp(env_type, "AUXVOLENV") == 0) {
+
+        *min_val = 0.0; *max_val = 2.0; *mid_val = 1.0; return true;
+
+    } else if (strcmp(env_type, "PANENV") == 0 ||
+               strcmp(env_type, "PANENV2") == 0 ||
+               strcmp(env_type, "AUXPANENV") == 0 ||
+               strcmp(env_type, "WIDTHENV") == 0 ||
+               strcmp(env_type, "WIDTHENV2") == 0) {
+
+        *min_val = -1.0; *max_val = 1.0; *mid_val = 0.0; return true;
+
+    } else if (strcmp(env_type, "MUTEENV") == 0 ||
+               strcmp(env_type, "VOLENV3") == 0 ||
+               strcmp(env_type, "AUXMUTEENV") == 0) {
+
+        *min_val = 0.0; *max_val = 1.0; *mid_val = 0.5; return true;
+
+    }
+
+    return false;
 }
 
-inline void decrease_track_volume(MediaTrack *track)
+template<bool increase>
+double adjust_volume(const double vol) noexcept
 {
-    double vol = GetMediaTrackInfo_Value(track, "D_VOL");
-    SetMediaTrackInfo_Value(track, "D_VOL", decrease_volume(vol));
+    double log_vol = log2(vol) * 2;
+    return pow(2, floor(log_vol + (increase ? 1.5 : -0.5)) / 2);
 }
 
-inline void increase_item_volume(MediaItem *item)
+template<bool increase>
+double adjust_envpt_value(
+    const double val,
+    const double min_val,
+    const double max_val,
+    const double mid_val
+) noexcept
+{
+    static constexpr int STEP_NUM = 8;
+
+    // common case
+    if (min_val == 0 && max_val == 1 && mid_val == 0.5)
+        return std::clamp(
+            floor(STEP_NUM * val + (increase ? 1.5 : -0.5)) / STEP_NUM,
+            0.0, 1.0
+        );
+    
+    // volume smoother
+    if (min_val == -60 && max_val == 12 && mid_val == 0)
+        return std::clamp(
+            floor(val / 3 + (increase ? 1.5 : -0.5)) * 3,
+            -60.0, 12.0
+        );
+    
+    // normalize
+    double factor = val < min_val ? 0 :
+                    val < mid_val ? (val - min_val) / (mid_val - min_val) / 2 :
+                    val < max_val ? (val - mid_val) / (max_val - mid_val) / 2 + 0.5 : 1;
+    
+    factor = floor(STEP_NUM * factor + (increase ? 1.5 : -0.5)) / STEP_NUM;
+    factor = std::clamp(factor, 0.0, 1.0);
+
+    // scale back
+    return factor < 0.5 ? min_val + (mid_val - min_val) * factor * 2 :
+                          mid_val + (max_val - mid_val) * (factor - 0.5) * 2;
+}
+
+template<bool increase>
+void adjust_item_volume(MediaItem *item)
 {
     double vol = GetMediaItemInfo_Value(item, "D_VOL");
-    SetMediaItemInfo_Value(item, "D_VOL", increase_volume(vol));
+    SetMediaItemInfo_Value(item, "D_VOL", adjust_volume<increase>(vol));
 }
 
-inline void decrease_item_volume(MediaItem *item)
+template<bool increase>
+void adjust_track_volume(MediaTrack *track)
 {
-    double vol = GetMediaItemInfo_Value(item, "D_VOL");
-    SetMediaItemInfo_Value(item, "D_VOL", decrease_volume(vol));
+    double vol = GetMediaTrackInfo_Value(track, "D_VOL");
+    SetMediaTrackInfo_Value(track, "D_VOL", adjust_volume<increase>(vol));
+}
+
+// simulate system volume key press
+template<bool increase>
+void adjust_system_volume()
+{
+#ifdef _WIN32
+    // system volume adjustment on Windows
+    INPUT input = {0};
+    input.type = INPUT_KEYBOARD;
+    input.ki.wVk = increase ? VK_VOLUME_UP : VK_VOLUME_DOWN;
+    SendInput(1, &input, sizeof(INPUT)); // press key
+    input.ki.dwFlags = KEYEVENTF_KEYUP;
+    SendInput(1, &input, sizeof(INPUT)); // release key
+
+#elif defined(__APPLE__)
+    // UNTESTED: system volume adjustment on macOS
+    #include <CoreGraphics/CoreGraphics.h>
+    
+    static constexpr int kVK_VolumeUp   = 0x48;
+    static constexpr int kVK_VolumeDown = 0x49;
+    
+    // create key event
+    CGEventRef event = CGEventCreateKeyboardEvent(
+        nullptr,
+        increase ? kVK_VolumeUp : kVK_VolumeDown,
+        true  // keyDown
+    );
+    CGEventPost(kCGHIDEventTap, event); // press key
+    CGEventSetType(event, kCGEventKeyUp);
+    CGEventPost(kCGHIDEventTap, event); // release key
+    
+    CFRelease(event); // free event
+#endif
+}
+
+template<bool increase>
+int adjust_all_selected_items_volume()
+{
+    int item_count = CountMediaItems(nullptr);
+    int modified_count = 0;
+    for (int i = 0; i < item_count; i++) {
+        MediaItem *item = GetMediaItem(nullptr, i);
+        if (IsMediaItemSelected(item)) {
+            adjust_item_volume<increase>(item);
+            modified_count++;
+        }
+    }
+    return modified_count;
+}
+
+template<bool increase>
+int adjust_all_selected_tracks_volume()
+{
+    int track_count = CountTracks(nullptr);
+    int modified_count = 0;
+    for (int i = 0; i < track_count; i++) {
+        MediaTrack *track = GetTrack(nullptr, i);
+        if (IsTrackSelected(track)) {
+            adjust_track_volume<increase>(track);
+            modified_count++;
+        }
+    }
+    return modified_count;
+}
+
+template<bool increase>
+int adjust_all_selected_envpoints_value(TrackEnvelope* env, char* env_type)
+{
+    int point_count = CountEnvelopePoints(env);
+    int modified_count = 0;
+    for (int i = 0; i < point_count; i++) {
+        double point_val;
+        bool selected;
+        if (!GetEnvelopePoint(env, i, nullptr, &point_val, nullptr, nullptr, &selected))
+            continue;
+        if (!selected)
+            continue;
+        
+        char env_state_chunk[64];
+        if (!GetEnvelopeStateChunk(env, env_state_chunk, sizeof(env_state_chunk), true))
+            continue;
+        
+        double min_val, max_val, mid_val;
+        if (!extract_envelope_info(env_state_chunk, strlen(env_state_chunk), env_type, &min_val, &max_val, &mid_val))
+            continue;
+        
+        static bool nosort = true;
+        int scale_mode = GetEnvelopeScalingMode(env);
+        double scaled_val = ScaleFromEnvelopeMode(scale_mode, point_val);
+        scaled_val = adjust_envpt_value<increase>(scaled_val, min_val, max_val, mid_val);
+        point_val = ScaleToEnvelopeMode(scale_mode, scaled_val);
+        modified_count += SetEnvelopePoint(env, i, nullptr, &point_val, nullptr, nullptr, &selected, &nosort);
+    }
+
+    if (modified_count) {
+        Envelope_SortPoints(env);
+        ShowConsoleMsg((std::to_string(modified_count) + " envelope points from " + env_type + " " + (increase ? "increased" : "decreased") + " value\n").c_str());
+    } else {
+        ShowConsoleMsg("No envelope points selected\n");
+    }
+
+    return modified_count;
+}
+
+template<bool increase>
+int handle_arrange_view(int* modified_count, char* env_type)
+{
+    int ptrx, ptry;
+    GetMousePosition(&ptrx, &ptry);
+    *modified_count = 0;
+
+    MediaItem *item = GetItemFromPoint(ptrx, ptry, true, nullptr);
+    if (item && IsMediaItemSelected(item)) {
+        *modified_count = adjust_all_selected_items_volume<increase>();
+        return 2;
+    }
+
+    char thing[12];
+    MediaTrack *track = GetThingFromPoint(ptrx, ptry, thing, sizeof(thing));
+    if (!track) {
+        adjust_system_volume<increase>();
+        *modified_count = 0;
+        return 0;
+    }
+    
+    if (strncmp(thing, "envelope", 8) == 0 || strncmp(thing, "envcp", 5) == 0) {
+        int envidx = extract_index(thing, strlen(thing));
+        TrackEnvelope* env = GetTrackEnvelope(track, envidx);
+        if (env) {
+            *modified_count = adjust_all_selected_envpoints_value<increase>(env, env_type);
+            if (*modified_count) return 3;
+        }
+    }
+
+    if (IsTrackSelected(track)) {
+        *modified_count = adjust_all_selected_tracks_volume<increase>();
+    } else {
+        adjust_track_volume<increase>(track);
+        *modified_count = 1;
+    }
+    return 1;
 }
 
 } // anonymous namespace
@@ -54,9 +293,25 @@ template<bool increase>
 void SmartVolAdjust()
 {
     PreventUIRefresh(1);
-    // TODO: implement
-    // if (0 < modified_notes_count) {
-    //     Undo_OnStateChange(("Increase " + std::to_string(modified_notes_count) + " MIDI Notes Velocity").c_str());
+    int modified_count;
+    char env_type[32];
+    // 1: tracks, 2: items, 3: envelope points
+    int modified_class = handle_arrange_view<increase>(&modified_count, env_type);
+
+    if (modified_count > 0) {
+        Undo_OnStateChange((
+            (increase ? "Increase " : "Decrease ") + 
+            std::to_string(modified_count) +
+            ( modified_class == 1 ? 
+                (std::string(modified_count == 1 ? " Track's" : " Tracks'") + " Volume") :
+              modified_class == 2 ? 
+                (std::string(modified_count == 1 ? " Item's" : " Items'") + " Volume") :
+              modified_class == 3 ? 
+                (std::string(modified_count == 1 ? " Envelope Point's" : " Envelope Points'") + 
+                " Value from " + env_type) :
+              "[Unknown]" )
+        ).c_str());
+    }
     PreventUIRefresh(-1);
     UpdateArrange();
 }

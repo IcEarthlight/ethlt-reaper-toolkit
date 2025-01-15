@@ -38,7 +38,7 @@ struct ActionInfo {
     std::function<void()> onaction; // function to call when action triggered
 };
 
-// Define your actions here with individual timer settings
+// define your actions here with individual timer settings
 std::vector<ActionInfo> actions = {
     {0, false, SectionId::Main,                "ETHLT_SMART_VOLUP_COMMAND_MAIN",            "ethlt: Smart Volume up (Main Section)",        false, {0}, SmartVolAdjust<true>},
     {1, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLUP_COMMAND_MIDI_EDITOR",     "ethlt: Smart Volume up (Midi Editor)",         false, {0}, SmartMidiVelAdjust<true>},
@@ -91,7 +91,7 @@ bool OnAction(KbdSectionInfo* sec, int command, int val, int valhw, int relmode,
                 plugin_register("-timer", (void*)action_info.onaction.target<void()>()); // "reaper.atexit(shutdown)" 
             }
         } else {
-            ShowConsoleMsg((std::string(action_info.action_name) + " called\n").c_str());
+            ShowConsoleMsg(("________________________________\n" + std::string(action_info.action_name) + " called\n").c_str()); // DEBUG
             action_info.onaction(); // Call the action-specific function
         }
         return true;
