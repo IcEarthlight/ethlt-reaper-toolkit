@@ -111,19 +111,20 @@ void PrintElementUnderPoint(int x, int y) {
             ShowConsoleMsg(("envidx: " + std::to_string(envidx) + "\n").c_str());
             TrackEnvelope* env = GetTrackEnvelope(track, envidx);
             if (env) {
-                char env_state_chunk[64];
+                char env_state_chunk[256];
                 if (GetEnvelopeStateChunk(env, env_state_chunk, sizeof(env_state_chunk), true)) {
                     char env_type[32];
                     double min_val, max_val, mid_val;
-                    if (extract_envelope_info(env_state_chunk, strlen(env_state_chunk), env_type, &min_val, &max_val, &mid_val)) {
-                        ShowConsoleMsg(("env_type: " + std::string(env_type) + "\n").c_str());
-                        ShowConsoleMsg(("min_val: " + std::to_string(min_val) + "\n").c_str());
-                        ShowConsoleMsg(("max_val: " + std::to_string(max_val) + "\n").c_str());
-                        ShowConsoleMsg(("mid_val: " + std::to_string(mid_val) + "\n").c_str());
-                    } else {
-                        ShowConsoleMsg("Failed to extract envelope info:\n");
-                        ShowConsoleMsg(env_state_chunk);
-                    }
+                    // if (extract_envelope_info(env_state_chunk, strlen(env_state_chunk), env_type, &min_val, &max_val, &mid_val)) {
+                    //     ShowConsoleMsg(("env_type: " + std::string(env_type) + "\n").c_str());
+                    //     ShowConsoleMsg(("min_val: " + std::to_string(min_val) + "\n").c_str());
+                    //     ShowConsoleMsg(("max_val: " + std::to_string(max_val) + "\n").c_str());
+                    //     ShowConsoleMsg(("mid_val: " + std::to_string(mid_val) + "\n").c_str());
+                    // } else {
+                    //     ShowConsoleMsg("Failed to extract envelope info:\n");
+                    //     ShowConsoleMsg(env_state_chunk);
+                    // }
+                    ShowConsoleMsg(env_state_chunk);
                 }
                 int point_count = CountEnvelopePoints(env);
                 for (int i = 0; i < point_count; i++) {

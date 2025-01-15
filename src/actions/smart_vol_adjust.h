@@ -62,7 +62,17 @@ constexpr inline bool extract_envelope_info(
     if (strcmp(env_type, "PARMENV") == 0) {
         char param_name[32] = {};
         int parsed = sscanf(end + 1, "%s %lf %lf %lf", param_name, min_val, max_val, mid_val);
-        sprintf(env_type, "PARMENV %s", param_name);
+
+        if (parsed >= 1) {
+            sprintf(env_type, "PARMENV %s", param_name);
+            
+            if (strcmp(param_name, "0:bypass") == 0 ||
+                strcmp(param_name, "2:delta") == 0) {
+                *adjust_type = 3;
+            } else {
+                *adjust_type = 0;
+            }
+        }
         return parsed == 4;
     
     } else if (strcmp(env_type, "VOLENV") == 0 ||
