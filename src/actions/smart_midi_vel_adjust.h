@@ -48,12 +48,8 @@ int handle_midi_editor()
         MIDI_SetNote(take, i, &selected, nullptr, nullptr, nullptr, nullptr, nullptr, &new_vel, &NOSORT_TRUE);
     }
 
-    if (modified_notes_count) {
+    if (modified_notes_count)
         MIDI_Sort(take);
-        ShowConsoleMsg((std::to_string(modified_notes_count) + " " + (modified_notes_count == 1 ? "note" : "notes") + " " + (increase ? "increased" : "decreased") + " velocity\n").c_str());
-    } else {
-        ShowConsoleMsg("No notes selected\n");
-    }
 
     return modified_notes_count;
 }

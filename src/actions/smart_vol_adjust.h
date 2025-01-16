@@ -320,12 +320,8 @@ int adjust_all_selected_envpoints_value(TrackEnvelope* env, char* env_type)
         modified_count += SetEnvelopePoint(env, i, nullptr, &point_val, nullptr, nullptr, &selected, &nosort);
     }
 
-    if (modified_count) {
+    if (modified_count)
         Envelope_SortPoints(env);
-        ShowConsoleMsg((std::to_string(modified_count) + " envelope points from " + env_type + " " + (increase ? "increased" : "decreased") + " value\n").c_str());
-    } else {
-        ShowConsoleMsg("No envelope points selected\n");
-    }
 
     return modified_count;
 }
@@ -404,7 +400,6 @@ void smart_vol_adjust()
               "[Unknown]" )
         ).c_str());
     }
-    ShowConsoleMsg(("modified_count: " + std::to_string(modified_count) + "\n").c_str());
     PreventUIRefresh(-1);
     UpdateArrange();
 }
