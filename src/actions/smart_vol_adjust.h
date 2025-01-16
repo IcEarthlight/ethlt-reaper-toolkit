@@ -22,6 +22,35 @@ constexpr inline int ipow(int base, int exp) noexcept {
     return result;
 }
 
+constexpr double db2factor(double db) noexcept {
+    double exp = db / 6;
+    int int_part = static_cast<int>(exp);
+    double frac_part = exp - int_part;
+    
+    // calculate 2^int_part using bit shifting
+    double result = 1;
+    if (int_part > 0)
+        result *= static_cast<double>(1 << int_part);
+    else if (int_part < 0)
+        result /= static_cast<double>(1 << -int_part);
+    
+    // for fractional part, use a simple approximation
+    if (frac_part != 0) {
+        double x = frac_part;
+        result *= 1.0 + 0.6931471805599453 * x 
+                      + 0.24022650695910072 * x*x
+                      + 0.05550410866482158 * x*x*x
+                      + 0.009618129107628477 * x*x*x*x
+                      + 0.0013333558146428443 * x*x*x*x*x;
+    }
+    
+    return result;
+}
+
+constexpr int MIN_VOL_DB = -48;
+constexpr double MIN_VOL_FACTOR = db2factor(MIN_VOL_DB);
+#define STEP_OFFSET (increase ? 1.4 : -0.4)
+
 constexpr inline int extract_index(const char* str, const size_t len) noexcept
 {
     int n = 0;
@@ -35,9 +64,8 @@ constexpr inline int extract_index(const char* str, const size_t len) noexcept
 }
 
 // adjust_type: 0: normal
-//              1: volume [0, 2]
-//              2: volume [0, 1]
-//              3: mute {0, 1}
+//              1: volume
+//              2: mute {0, 1}
 constexpr inline bool extract_envelope_info(
     const char *str,
     const size_t len,
@@ -68,14 +96,29 @@ constexpr inline bool extract_envelope_info(
         if (parsed >= 1) {
             sprintf(env_type, "PARMENV %s", param_name);
 
-            if (strcmp(param_name, "0:bypass") == 0 ||
-                strcmp(param_name, "2:delta") == 0) {
-                *adjust_type = 3;
-            } else {
-                *adjust_type = 0;
+            // try to find "DEFSHAPE" in str
+            double defshape = 0;
+            const char* defshape_ptr = strstr(end + 1, "DEFSHAPE");
+    
+            if (defshape_ptr &&
+                sscanf(defshape_ptr + 8, "%lf", &defshape) == 1 &&
+                defshape == 1
+            ) {
+                *adjust_type = 2; return true;
             }
         }
-        return parsed == 4;
+
+        if (parsed < 4) return false;
+        
+        // for factorial volume parameters in build-in plugins
+        if ((*min_val == 0 && *max_val == 2 && *mid_val == 1) ||
+            (*min_val == 0 && *max_val == 1 && *mid_val == 0.25) ||
+            (*min_val == 0 && *max_val == 4 && *mid_val == 1))
+            *adjust_type = 1;
+        else
+            *adjust_type = 0;
+        
+        return true;
     
     } else if (strcmp(env_type, "VOLENV") == 0 ||
                strcmp(env_type, "VOLENV2") == 0 ||
@@ -94,11 +137,11 @@ constexpr inline bool extract_envelope_info(
     } else if (strcmp(env_type, "MUTEENV") == 0 ||
                strcmp(env_type, "AUXMUTEENV") == 0) {
 
-        *min_val = 0.0; *max_val = 1.0; *mid_val = 0.5; *adjust_type = 3; return true;
+        *min_val = 0.0; *max_val = 1.0; *mid_val = 0.5; *adjust_type = 2; return true;
 
     } else if (strcmp(env_type, "VOLENV3") == 0) {
 
-        *min_val = 0.0; *max_val = 1.0; *mid_val = 0.5; *adjust_type = 2; return true;
+        *min_val = 0.0; *max_val = 1.0; *mid_val = 0.5; *adjust_type = 1; return true;
     }
 
     return false;
@@ -107,13 +150,21 @@ constexpr inline bool extract_envelope_info(
 template<bool increase, bool is_fine>
 double adjust_volume(const double vol) noexcept
 {
-    if (is_fine) {
-        double log_vol = log2(vol) * 12;
-        return pow(2, floor(log_vol + (increase ? 1.5 : -0.5)) / 12);
-    } else {
-        double log_vol = log2(vol) * 2;
-        return pow(2, floor(log_vol + (increase ? 1.5 : -0.5)) / 2);
-    }
+    if (vol <= 0)
+        return increase ? MIN_VOL_FACTOR : 0;
+
+    if (!increase && vol < MIN_VOL_FACTOR)
+        return 0;
+    
+    const double new_vol = exp2(
+        is_fine ? floor(log2(vol) * 12 + STEP_OFFSET) / 12 :
+                  floor(log2(vol) *  2 + STEP_OFFSET) /  2
+    );
+    
+    if (new_vol < MIN_VOL_FACTOR)
+        return increase ? MIN_VOL_FACTOR : 0;
+    
+    return new_vol;
 }
 
 template<bool increase, bool is_fine>
@@ -128,27 +179,23 @@ double adjust_envpt_value(
     static constexpr int STEP_NUM = is_fine ? 32 : 8;
 
     // common case
-    if (min_val == 0 && max_val == 1 && mid_val == 0.5 && adjust_type == 0)
+    if (adjust_type == 0 && min_val == 0 && max_val == 1 && mid_val == 0.5)
         return std::clamp(
-            floor(STEP_NUM * val + (increase ? 1.5 : -0.5)) / STEP_NUM,
+            floor(STEP_NUM * val + STEP_OFFSET) / STEP_NUM,
             0.0, 1.0
         );
-
-    // special case
-    switch (adjust_type) {
-    case 1:
-        return std::min(2.0, adjust_volume<increase, is_fine>(val));
-    case 2:
-        return std::min(1.0, adjust_volume<increase, is_fine>(val));
-    case 3:
+    
+    if (adjust_type == 1 && min_val == 0)
+        return std::min(max_val / mid_val, adjust_volume<increase, is_fine>(val / mid_val)) * mid_val;
+    
+    if (adjust_type == 2)
         return increase;
-    }
     
     // volume smoother
     if (min_val == -60 && max_val == 12 && mid_val == 0)
         return std::clamp(
-            is_fine ? floor(val * 2 + (increase ? 1.5 : -0.5)) / 2 :
-                      floor(val / 3 + (increase ? 1.5 : -0.5)) * 3,
+            is_fine ? floor(val * 2 + STEP_OFFSET) / 2 :
+                      floor(val / 3 + STEP_OFFSET) * 3,
             -60.0, 12.0
         );
     
@@ -157,7 +204,7 @@ double adjust_envpt_value(
                     val < mid_val ? (val - min_val) / (mid_val - min_val) / 2 :
                     val < max_val ? (val - mid_val) / (max_val - mid_val) / 2 + 0.5 : 1;
     
-    factor = floor(STEP_NUM * factor + (increase ? 1.5 : -0.5)) / STEP_NUM;
+    factor = floor(STEP_NUM * factor + STEP_OFFSET) / STEP_NUM;
     factor = std::clamp(factor, 0.0, 1.0);
 
     // scale back
@@ -256,7 +303,7 @@ int adjust_all_selected_envpoints_value(TrackEnvelope* env, char* env_type)
         if (!selected)
             continue;
         
-        char env_state_chunk[64];
+        char env_state_chunk[256];
         if (!GetEnvelopeStateChunk(env, env_state_chunk, sizeof(env_state_chunk), true))
             continue;
         
@@ -327,6 +374,8 @@ int handle_arrange_view(int* modified_count, char* env_type)
     return 1;
 }
 
+#undef STEP_OFFSET
+
 } // anonymous namespace
 
 // Adjusts selected media items' or tracks' volume based on template parameter
@@ -336,7 +385,7 @@ void smart_vol_adjust()
 {
     PreventUIRefresh(1);
     int modified_count;
-    char env_type[32];
+    char env_type[64];
     // 0: nothing,1: tracks, 2: items, 3: envelope points
     int modified_class = handle_arrange_view<increase, is_fine>(&modified_count, env_type);
 

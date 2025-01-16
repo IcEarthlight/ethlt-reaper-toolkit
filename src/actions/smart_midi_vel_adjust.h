@@ -14,11 +14,11 @@ template<bool increase, bool is_fine>
 inline int adjust_velocity(int vel) noexcept
 {
     if (is_fine)
-        return increase ? std::min(0x7F, (((vel+2) >> 2) + 1) << 2) :
-                          std::max(1,    (((vel+2) >> 2) - 1) << 2);
+        return increase ? std::min(0x7F, (((vel+1) >> 2) + 1) << 2) :
+                          std::max(1,    (((vel+3) >> 2) - 1) << 2);
     else
-        return increase ? std::min(0x7F, (((vel+8) >> 4) + 1) << 4) :
-                          std::max(1,    (((vel+8) >> 4) - 1) << 4);
+        return increase ? std::min(0x7F, (((vel+7) >> 4) + 1) << 4) :
+                          std::max(1,    (((vel+9) >> 4) - 1) << 4);
 }
 
 template<bool increase, bool is_fine>
