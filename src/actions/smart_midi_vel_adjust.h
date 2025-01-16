@@ -10,17 +10,19 @@ namespace PROJECT_NAME
 namespace
 {
 
-inline int increase_velocity(int vel) noexcept
+template<bool increase, bool is_fine>
+inline int adjust_velocity(int vel) noexcept
 {
-    return std::min(0x7F, (((vel+8) >> 4) + 1) << 4);
+    if (is_fine)
+        return increase ? std::min(0x7F, (((vel+2) >> 2) + 1) << 2) :
+                          std::max(1,    (((vel+2) >> 2) - 1) << 2);
+    else
+        return increase ? std::min(0x7F, (((vel+8) >> 4) + 1) << 4) :
+                          std::max(1,    (((vel+8) >> 4) - 1) << 4);
 }
 
-inline int decrease_velocity(int vel) noexcept
-{
-    return std::max(1, (((vel+8) >> 4) - 1) << 4);
-}
-
-inline int handle_midi_editor(bool increase)
+template<bool increase, bool is_fine>
+int handle_midi_editor()
 {
     HWND midi_editor = MIDIEditor_GetActive();
     if (!midi_editor) return -1;
@@ -42,7 +44,7 @@ inline int handle_midi_editor(bool increase)
         if (!selected) continue;
 
         modified_notes_count++;
-        int new_vel = (increase ? increase_velocity : decrease_velocity)(vel);
+        int new_vel = adjust_velocity<increase, is_fine>(vel);
         MIDI_SetNote(take, i, &selected, nullptr, nullptr, nullptr, nullptr, nullptr, &new_vel, &NOSORT_TRUE);
     }
 
@@ -58,14 +60,15 @@ inline int handle_midi_editor(bool increase)
 
 } // anonymous namespace
 
-template<bool increase>
+template<bool increase, bool is_fine>
 bool try_to_handle_midi_editor()
 {
-    int modified_notes_count = handle_midi_editor(increase);
+    int modified_notes_count = handle_midi_editor<increase, is_fine>();
     if (0 < modified_notes_count) {
         Undo_OnStateChange((
-            (increase ? "Increase " : "Decrease ") + 
-            std::to_string(modified_notes_count) + 
+            (is_fine ? (increase ? "Slightly increase " : "Slightly decrease ") :
+                       (increase ? "Increase " : "Decrease ")) +
+            std::to_string(modified_notes_count) +
             " MIDI " +
             (modified_notes_count == 1 ? "Note" : "Notes") +
             " Velocity"
@@ -77,22 +80,11 @@ bool try_to_handle_midi_editor()
 
 // Adjusts selected MIDI notes' velocity in the active MIDI editor (if any)
 // @tparam increase If true, increases velocity; if false, decreases velocity
-template<bool increase>
+template<bool increase, bool is_fine>
 void smart_midi_vel_adjust()
 {
     PreventUIRefresh(1);
-    int modified_notes_count = handle_midi_editor(increase);
-    if (0 < modified_notes_count) {
-        Undo_OnStateChange((
-            (increase ? "Increase " : "Decrease ") + 
-            std::to_string(modified_notes_count) + 
-            " MIDI " +
-            (modified_notes_count == 1 ? "Note" : "Notes") +
-            " Velocity"
-        ).c_str());
-    } else if (modified_notes_count == -1) {
-        ShowConsoleMsg("No MIDI editor found\n");
-    }
+    try_to_handle_midi_editor<increase, is_fine>();
     PreventUIRefresh(-1);
     UpdateArrange();
 }

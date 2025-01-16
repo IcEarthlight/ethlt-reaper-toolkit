@@ -104,14 +104,19 @@ constexpr inline bool extract_envelope_info(
     return false;
 }
 
-template<bool increase>
+template<bool increase, bool is_fine>
 double adjust_volume(const double vol) noexcept
 {
-    double log_vol = log2(vol) * 2;
-    return pow(2, floor(log_vol + (increase ? 1.5 : -0.5)) / 2);
+    if (is_fine) {
+        double log_vol = log2(vol) * 12;
+        return pow(2, floor(log_vol + (increase ? 1.5 : -0.5)) / 12);
+    } else {
+        double log_vol = log2(vol) * 2;
+        return pow(2, floor(log_vol + (increase ? 1.5 : -0.5)) / 2);
+    }
 }
 
-template<bool increase>
+template<bool increase, bool is_fine>
 double adjust_envpt_value(
     const double val,
     const double min_val,
@@ -120,7 +125,7 @@ double adjust_envpt_value(
     const int adjust_type = 0
 ) noexcept
 {
-    static constexpr int STEP_NUM = 8;
+    static constexpr int STEP_NUM = is_fine ? 32 : 8;
 
     // common case
     if (min_val == 0 && max_val == 1 && mid_val == 0.5 && adjust_type == 0)
@@ -132,9 +137,9 @@ double adjust_envpt_value(
     // special case
     switch (adjust_type) {
     case 1:
-        return std::min(2.0, adjust_volume<increase>(val));
+        return std::min(2.0, adjust_volume<increase, is_fine>(val));
     case 2:
-        return std::min(1.0, adjust_volume<increase>(val));
+        return std::min(1.0, adjust_volume<increase, is_fine>(val));
     case 3:
         return increase;
     }
@@ -142,7 +147,8 @@ double adjust_envpt_value(
     // volume smoother
     if (min_val == -60 && max_val == 12 && mid_val == 0)
         return std::clamp(
-            floor(val / 3 + (increase ? 1.5 : -0.5)) * 3,
+            is_fine ? floor(val * 2 + (increase ? 1.5 : -0.5)) / 2 :
+                      floor(val / 3 + (increase ? 1.5 : -0.5)) * 3,
             -60.0, 12.0
         );
     
@@ -159,18 +165,18 @@ double adjust_envpt_value(
                           mid_val + (max_val - mid_val) * (factor - 0.5) * 2;
 }
 
-template<bool increase>
+template<bool increase, bool is_fine>
 void adjust_item_volume(MediaItem *item)
 {
     double vol = GetMediaItemInfo_Value(item, "D_VOL");
-    SetMediaItemInfo_Value(item, "D_VOL", adjust_volume<increase>(vol));
+    SetMediaItemInfo_Value(item, "D_VOL", adjust_volume<increase, is_fine>(vol));
 }
 
-template<bool increase>
+template<bool increase, bool is_fine>
 void adjust_track_volume(MediaTrack *track)
 {
     double vol = GetMediaTrackInfo_Value(track, "D_VOL");
-    SetMediaTrackInfo_Value(track, "D_VOL", adjust_volume<increase>(vol));
+    SetMediaTrackInfo_Value(track, "D_VOL", adjust_volume<increase, is_fine>(vol));
 }
 
 // simulate system volume key press
@@ -207,7 +213,7 @@ void adjust_system_volume()
 #endif
 }
 
-template<bool increase>
+template<bool increase, bool is_fine>
 int adjust_all_selected_items_volume()
 {
     int item_count = CountMediaItems(nullptr);
@@ -215,14 +221,14 @@ int adjust_all_selected_items_volume()
     for (int i = 0; i < item_count; i++) {
         MediaItem *item = GetMediaItem(nullptr, i);
         if (IsMediaItemSelected(item)) {
-            adjust_item_volume<increase>(item);
+            adjust_item_volume<increase, is_fine>(item);
             modified_count++;
         }
     }
     return modified_count;
 }
 
-template<bool increase>
+template<bool increase, bool is_fine>
 int adjust_all_selected_tracks_volume()
 {
     int track_count = CountTracks(nullptr);
@@ -230,14 +236,14 @@ int adjust_all_selected_tracks_volume()
     for (int i = 0; i < track_count; i++) {
         MediaTrack *track = GetTrack(nullptr, i);
         if (IsTrackSelected(track)) {
-            adjust_track_volume<increase>(track);
+            adjust_track_volume<increase, is_fine>(track);
             modified_count++;
         }
     }
     return modified_count;
 }
 
-template<bool increase>
+template<bool increase, bool is_fine>
 int adjust_all_selected_envpoints_value(TrackEnvelope* env, char* env_type)
 {
     int point_count = CountEnvelopePoints(env);
@@ -262,7 +268,7 @@ int adjust_all_selected_envpoints_value(TrackEnvelope* env, char* env_type)
         static bool nosort = true;
         int scale_mode = GetEnvelopeScalingMode(env);
         double scaled_val = ScaleFromEnvelopeMode(scale_mode, point_val);
-        scaled_val = adjust_envpt_value<increase>(scaled_val, min_val, max_val, mid_val, adjust_type);
+        scaled_val = adjust_envpt_value<increase, is_fine>(scaled_val, min_val, max_val, mid_val, adjust_type);
         point_val = ScaleToEnvelopeMode(scale_mode, scaled_val);
         modified_count += SetEnvelopePoint(env, i, nullptr, &point_val, nullptr, nullptr, &selected, &nosort);
     }
@@ -277,7 +283,7 @@ int adjust_all_selected_envpoints_value(TrackEnvelope* env, char* env_type)
     return modified_count;
 }
 
-template<bool increase>
+template<bool increase, bool is_fine>
 int handle_arrange_view(int* modified_count, char* env_type)
 {
     int ptrx, ptry;
@@ -287,7 +293,7 @@ int handle_arrange_view(int* modified_count, char* env_type)
     // try to handle items
     MediaItem *item = GetItemFromPoint(ptrx, ptry, true, nullptr);
     if (item && IsMediaItemSelected(item)) {
-        *modified_count = adjust_all_selected_items_volume<increase>();
+        *modified_count = adjust_all_selected_items_volume<increase, is_fine>();
         return 2;
     }
 
@@ -295,7 +301,7 @@ int handle_arrange_view(int* modified_count, char* env_type)
     char thing[12];
     MediaTrack *track = GetThingFromPoint(ptrx, ptry, thing, sizeof(thing));
     if (!track) {
-        if (!try_to_handle_midi_editor<increase>())
+        if (!try_to_handle_midi_editor<increase, is_fine>())
             adjust_system_volume<increase>();
         *modified_count = 0;
         return 0;
@@ -306,16 +312,16 @@ int handle_arrange_view(int* modified_count, char* env_type)
         int envidx = extract_index(thing, strlen(thing));
         TrackEnvelope* env = GetTrackEnvelope(track, envidx);
         if (env) {
-            *modified_count = adjust_all_selected_envpoints_value<increase>(env, env_type);
+            *modified_count = adjust_all_selected_envpoints_value<increase, is_fine>(env, env_type);
             if (*modified_count) return 3;
         }
     }
 
     // try to handle single/selected tracks
     if (IsTrackSelected(track)) {
-        *modified_count = adjust_all_selected_tracks_volume<increase>();
+        *modified_count = adjust_all_selected_tracks_volume<increase, is_fine>();
     } else {
-        adjust_track_volume<increase>(track);
+        adjust_track_volume<increase, is_fine>(track);
         *modified_count = 1;
     }
     return 1;
@@ -325,29 +331,31 @@ int handle_arrange_view(int* modified_count, char* env_type)
 
 // Adjusts selected media items' or tracks' volume based on template parameter
 // @tparam increase If true, increases volume; if false, decreases volume
-template<bool increase>
+template<bool increase, bool is_fine>
 void smart_vol_adjust()
 {
     PreventUIRefresh(1);
     int modified_count;
     char env_type[32];
     // 0: nothing,1: tracks, 2: items, 3: envelope points
-    int modified_class = handle_arrange_view<increase>(&modified_count, env_type);
+    int modified_class = handle_arrange_view<increase, is_fine>(&modified_count, env_type);
 
     if (modified_count > 0) {
         Undo_OnStateChange((
-            (increase ? "Increase " : "Decrease ") + 
+            (is_fine ? (increase ? "Slightly increase " : "Slightly decrease ") :
+                       (increase ? "Increase " : "Decrease ")) +
             std::to_string(modified_count) +
-            ( modified_class == 1 ? 
-                (std::string(modified_count == 1 ? " Track's" : " Tracks'") + " Volume") :
-              modified_class == 2 ? 
-                (std::string(modified_count == 1 ? " Item's" : " Items'") + " Volume") :
-              modified_class == 3 ? 
-                (std::string(modified_count == 1 ? " Envelope Point's" : " Envelope Points'") + 
+            ( modified_class == 1 ?
+                (std::string(modified_count == 1 ? " Track" : " Tracks") + " Volume") :
+              modified_class == 2 ?
+                (std::string(modified_count == 1 ? " Item" : " Items") + " Volume") :
+              modified_class == 3 ?
+                (std::string(modified_count == 1 ? " Envelope Point" : " Envelope Points") +
                 " Value from " + env_type) :
               "[Unknown]" )
         ).c_str());
     }
+    ShowConsoleMsg(("modified_count: " + std::to_string(modified_count) + "\n").c_str());
     PreventUIRefresh(-1);
     UpdateArrange();
 }
