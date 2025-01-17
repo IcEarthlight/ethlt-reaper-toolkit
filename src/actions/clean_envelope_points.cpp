@@ -15,7 +15,7 @@ struct EnvPoint
     int shape;
 };
 
-static int handle_track_envelope(TrackEnvelope* env)
+static int handle_envelope(TrackEnvelope* env)
 {
     int point_count, del_point_count = 0;
     std::stack<int> del_point_indices;
@@ -171,12 +171,33 @@ static int handle_all_track_envelopes()
         MediaTrack *track = GetTrack(nullptr, i);
         if (!track) continue;
 
-
+        // handle track envelopes
         int env_count = CountTrackEnvelopes(track);
         for (int j = 0; j < env_count; j++) {
             TrackEnvelope *env = GetTrackEnvelope(track, j);
             if (!env) continue;
-            del_point_count += handle_track_envelope(env);
+            del_point_count += handle_envelope(env);
+        }
+
+        // handle take envelopes
+        int item_count = CountTrackMediaItems(track);
+        for (int j = 0; j < item_count; j++) {
+            MediaItem *item = GetTrackMediaItem(track, j);
+            if (!item) continue;
+
+            int take_count = CountTakes(item);
+            for (int k = 0; k < take_count; k++) {
+                MediaItem_Take *take = GetMediaItemTake(item, k);
+                if (!take) continue;
+
+                int take_env_count = CountTakeEnvelopes(take);
+                for (int l = 0; l < take_env_count; l++) {
+                    TrackEnvelope *env = GetTakeEnvelope(take, l);
+                    if (!env) continue;
+                    
+                    del_point_count += handle_envelope(env);
+                }
+            }
         }
     }
 
