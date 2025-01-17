@@ -53,12 +53,13 @@ std::vector<ActionInfo> actions = {
     { 8, false, false, SectionId::Main,                "ETHLT_APPEND_DUPLICATE_MAIN",               "ethlt: Append Duplicate (Main Section)",       {0}, append_duplicate_main},
     { 9, false, false, SectionId::MidiEditor,          "ETHLT_APPEND_DUPLICATE_MIDI_EDITOR",        "ethlt: Append Duplicate (Midi Editor)",        {0}, append_duplicate_midi_editor},
     {10, false, false, SectionId::Main,                "ETHLT_CLEAN_ENVELOPE_POINTS",               "ethlt: Clean Envelope Points",                 {0}, clean_envelope_points},
-    {11, false, false, SectionId::Main,                "ETHLT_TEST_COMMAND_MAIN",                   "ethlt: Test (Main Section)",                   {0}, test},
-    {12, false, false, SectionId::MidiEditor,          "ETHLT_TEST_SHOW_SELECTED_MIDI_ITEMS",       "ethlt: Show Selected MIDI Items (Midi Editor)",{0}, show_selected_midi_items},
-    {13, false, false, SectionId::MidiEditor,          "ETHLT_TEST_SHOW_ALL_MIDI_ITEMS",            "ethlt: Show All MIDI Items (Midi Editor)",     {0}, show_all_midi_items},
-    {14, false, false, SectionId::MidiEventListEditor, "ETHLT_TEST_COMMAND_MIDI_EVENT_LIST_EDITOR", "ethlt: Test (Midi Event List Editor Section)", {0}, test},
-    {15, false, false, SectionId::MidiInlineEditor,    "ETHLT_TEST_COMMAND_MIDI_INLINE_EDITOR",     "ethlt: Test (Midi Inline Editor Section)",     {0}, test},
-    {16, false, false, SectionId::MediaExplorer,       "ETHLT_TEST_COMMAND_MEDIA_EXPLORER",         "ethlt: Test (Media Explorer Section)",         {0}, test}
+    {11, false, false, SectionId::Main,                "ETHLT_SHOW_ALL_ENVELOPE_POINTS",            "ethlt: Show All Envelope Points",              {0}, show_all_envelope_points},
+    {12, false, false, SectionId::Main,                "ETHLT_TEST_COMMAND_MAIN",                   "ethlt: Test (Main Section)",                   {0}, test},
+    {13, false, false, SectionId::MidiEditor,          "ETHLT_TEST_SHOW_SELECTED_MIDI_ITEMS",       "ethlt: Show Selected MIDI Items (Midi Editor)",{0}, show_selected_midi_items},
+    {14, false, false, SectionId::MidiEditor,          "ETHLT_TEST_SHOW_ALL_MIDI_ITEMS",            "ethlt: Show All MIDI Items (Midi Editor)",     {0}, show_all_midi_items},
+    {15, false, false, SectionId::MidiEventListEditor, "ETHLT_TEST_COMMAND_MIDI_EVENT_LIST_EDITOR", "ethlt: Test (Midi Event List Editor Section)", {0}, test},
+    {16, false, false, SectionId::MidiInlineEditor,    "ETHLT_TEST_COMMAND_MIDI_INLINE_EDITOR",     "ethlt: Test (Midi Inline Editor Section)",     {0}, test},
+    {17, false, false, SectionId::MediaExplorer,       "ETHLT_TEST_COMMAND_MEDIA_EXPLORER",         "ethlt: Test (Media Explorer Section)",         {0}, test}
 };
 
 // hInstance is declared in header file my_plugin.hpp

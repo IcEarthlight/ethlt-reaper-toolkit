@@ -211,6 +211,8 @@ double adjust_envpt_value(
                           mid_val + (max_val - mid_val) * (factor - 0.5) * 2;
 }
 
+#undef STEP_OFFSET
+
 template<bool increase, bool is_fine>
 void adjust_item_volume(MediaItem *item)
 {
@@ -369,8 +371,6 @@ int handle_arrange_view(int* modified_count, char* env_type)
     }
     return 1;
 }
-
-#undef STEP_OFFSET
 
 } // anonymous namespace
 

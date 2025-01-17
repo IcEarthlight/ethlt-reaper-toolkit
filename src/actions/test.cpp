@@ -189,7 +189,7 @@ void print_element_under_point(int x, int y) {
     buf[0] = '\0'; // clear buf
 }
 
-void test()
+void show_thing_under_point()
 {
     POINT pt;
     if (!GetCursorPos(&pt)) {
@@ -267,4 +267,43 @@ void show_all_midi_items() {
     }
 }
 
+void show_all_envelope_points() {
+    int track_count = CountTracks(nullptr);
+    for (int i = 0; i < track_count; i++) {
+        MediaTrack *track = GetTrack(nullptr, i);
+        if (!track) continue;
+        ShowConsoleMsg(("track: " + std::to_string(i) + "\n").c_str());
+
+
+        int env_count = CountTrackEnvelopes(track);
+        for (int j = 0; j < env_count; j++) {
+            TrackEnvelope *env = GetTrackEnvelope(track, j);
+            if (!env) continue;
+            ShowConsoleMsg(("  envelope: " + std::to_string(j) + "\n").c_str());
+
+            int point_count = CountEnvelopePoints(env);
+            for (int k = 0; k < point_count; k++) {
+                int shape;
+                double time, value, tension;
+                bool selected;
+                GetEnvelopePoint(env, k, &time, &value, &shape, &tension, &selected);
+                ShowConsoleMsg((
+                    std::to_string(k) + " " +
+                    std::to_string(time) + " " +
+                    std::to_string(value) + " " +
+                    std::to_string(shape) + " " +
+                    std::to_string(tension) + " " +
+                    (selected ? "[selected] " : "") +
+                    "\n"
+                ).c_str());
+            }
+        }
+    }
 }
+
+void test()
+{
+    ShowConsoleMsg(("GetCursorContext2: " + std::to_string(GetCursorContext2(true)) + "\n").c_str());
+}
+
+} // namespace PROJECT_NAME
