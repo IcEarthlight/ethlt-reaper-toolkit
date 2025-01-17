@@ -303,7 +303,41 @@ void show_all_envelope_points() {
 
 void test()
 {
-    ShowConsoleMsg(("GetCursorContext2: " + std::to_string(GetCursorContext2(true)) + "\n").c_str());
+    int cursor_context = GetCursorContext2(true);
+    ShowConsoleMsg((
+        "GetCursorContext2: " +
+        std::to_string(cursor_context) + " " +
+        (cursor_context == 0 ? "track panels" :
+         cursor_context == 1 ? "items" :
+         cursor_context == 2 ? "envelopes" : "unknown"
+        ) + "\n"
+    ).c_str());
+
+    switch (cursor_context) {
+    case 0: break;
+    case 1: break;
+    case 2:
+        TrackEnvelope *env = GetSelectedEnvelope(nullptr);
+        if (env) {
+            char buf[64];
+            GetEnvelopeName(env, buf, sizeof(buf));
+            int point_count = CountEnvelopePoints(env);
+            int selected_count = 0;
+            for (int i = 0; i < point_count; i++) {
+                bool selected;
+                GetEnvelopePoint(env, i, nullptr, nullptr, nullptr, nullptr, &selected);
+                selected_count += selected;
+            }
+            ShowConsoleMsg((
+                "Selected envelope: " +
+                std::string(buf) + " " +
+                (selected_count ? ("(" + std::to_string(selected_count) + " points selected)") : "") + "\n"
+            ).c_str());
+        } else {
+            ShowConsoleMsg("No selected envelope\n");
+        }
+        break;
+    }
 }
 
 } // namespace PROJECT_NAME

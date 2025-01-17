@@ -292,7 +292,7 @@ int adjust_all_selected_tracks_volume()
 }
 
 template<bool increase, bool is_fine>
-int adjust_all_selected_envpoints_value(TrackEnvelope* env, char* env_type)
+int adjust_all_selected_envpoints_value(TrackEnvelope *env, char *env_type)
 {
     int point_count = CountEnvelopePoints(env);
     int modified_count = 0;
@@ -328,8 +328,19 @@ int adjust_all_selected_envpoints_value(TrackEnvelope* env, char* env_type)
 }
 
 template<bool increase, bool is_fine>
-int handle_arrange_view(int* modified_count, char* env_type)
+int handle_arrange_view(int *modified_count, char *env_type)
 {
+    int cursor_context = GetCursorContext2(true);
+
+    // try to handle envelopes
+    if (cursor_context == 2) {
+        TrackEnvelope *env = GetSelectedEnvelope(nullptr);
+        if(env) {
+            *modified_count = adjust_all_selected_envpoints_value<increase, is_fine>(env, env_type);
+            if (*modified_count) return 3;
+        }
+    }
+    
     int ptrx, ptry;
     GetMousePosition(&ptrx, &ptry);
     *modified_count = 0;
@@ -344,32 +355,23 @@ int handle_arrange_view(int* modified_count, char* env_type)
     // try to find tracks
     char thing[12];
     MediaTrack *track = GetThingFromPoint(ptrx, ptry, thing, sizeof(thing));
-    if (!track) {
-        // try to handle MIDI editor
-        if (!try_to_handle_midi_editor<increase, is_fine>())
-            adjust_system_volume<increase>();
-        *modified_count = 0;
-        return 0;
-    }
-    
-    // try to handle env points
-    if (strncmp(thing, "envelope", 8) == 0 || strncmp(thing, "envcp", 5) == 0) {
-        int envidx = extract_index(thing, strlen(thing));
-        TrackEnvelope* env = GetTrackEnvelope(track, envidx);
-        if (env) {
-            *modified_count = adjust_all_selected_envpoints_value<increase, is_fine>(env, env_type);
-            if (*modified_count) return 3;
+    if (track && (strcmp(thing, "tcp") == 0 || strcmp(thing, "mcp") == 0)) {
+        // try to handle single/selected tracks
+        if (IsTrackSelected(track)) {
+            *modified_count = adjust_all_selected_tracks_volume<increase, is_fine>();
+        } else {
+            adjust_track_volume<increase, is_fine>(track);
+            *modified_count = 1;
         }
+        return 1;
     }
 
-    // try to handle single/selected tracks
-    if (IsTrackSelected(track)) {
-        *modified_count = adjust_all_selected_tracks_volume<increase, is_fine>();
-    } else {
-        adjust_track_volume<increase, is_fine>(track);
-        *modified_count = 1;
-    }
-    return 1;
+    // try to handle MIDI editor (not focused)
+    if (!try_to_handle_midi_editor<increase, is_fine>())
+        adjust_system_volume<increase>();
+    *modified_count = 0;
+
+    return 0;
 }
 
 } // anonymous namespace
