@@ -294,31 +294,38 @@ int adjust_all_selected_tracks_volume()
 template<bool increase, bool is_fine>
 int adjust_all_selected_envpoints_value(TrackEnvelope *env, char *env_type)
 {
-    int point_count = CountEnvelopePoints(env);
+    char env_state_chunk[256];
+    if (!GetEnvelopeStateChunk(env, env_state_chunk, sizeof(env_state_chunk), true))
+        return 0;
+    
+    int adjust_type;
+    double min_val, max_val, mid_val;
+    if (!extract_envelope_info(env_state_chunk, strlen(env_state_chunk), env_type, &min_val, &max_val, &mid_val, &adjust_type))
+        return 0;
+    
     int modified_count = 0;
-    for (int i = 0; i < point_count; i++) {
-        double point_val;
-        bool selected;
-        if (!GetEnvelopePoint(env, i, nullptr, &point_val, nullptr, nullptr, &selected))
-            continue;
-        if (!selected)
-            continue;
+    int scale_mode = GetEnvelopeScalingMode(env);
+    int autoitem_count = CountAutomationItems(env);
+    for (int i = -1; i < autoitem_count; i++) { // -1 is for underlying envelope
+    
+        int point_count = CountEnvelopePointsEx(env, i);
+        int loop_point_count = CountEnvelopePointsEx(env, i|0x10000000);
         
-        char env_state_chunk[256];
-        if (!GetEnvelopeStateChunk(env, env_state_chunk, sizeof(env_state_chunk), true))
-            continue;
-        
-        int adjust_type;
-        double min_val, max_val, mid_val;
-        if (!extract_envelope_info(env_state_chunk, strlen(env_state_chunk), env_type, &min_val, &max_val, &mid_val, &adjust_type))
-            continue;
-        
-        static bool nosort = true;
-        int scale_mode = GetEnvelopeScalingMode(env);
-        double scaled_val = ScaleFromEnvelopeMode(scale_mode, point_val);
-        scaled_val = adjust_envpt_value<increase, is_fine>(scaled_val, min_val, max_val, mid_val, adjust_type);
-        point_val = ScaleToEnvelopeMode(scale_mode, scaled_val);
-        modified_count += SetEnvelopePoint(env, i, nullptr, &point_val, nullptr, nullptr, &selected, &nosort);
+        for (int j = 0; j < point_count; j++) {
+            double point_val;
+            bool selected;
+            if (!GetEnvelopePointEx(env, i, j, nullptr, &point_val, nullptr, nullptr, &selected))
+                continue;
+            if (!selected)
+                continue;
+            ShowConsoleMsg((std::to_string(i) + "\t" + std::to_string(j) + "\t" + std::to_string(point_val) + "\n").c_str());
+            
+            static bool nosort = true;
+            double scaled_val = ScaleFromEnvelopeMode(scale_mode, point_val);
+            scaled_val = adjust_envpt_value<increase, is_fine>(scaled_val, min_val, max_val, mid_val, adjust_type);
+            point_val = ScaleToEnvelopeMode(scale_mode, scaled_val);
+            modified_count += SetEnvelopePointEx(env, i, j % loop_point_count, nullptr, &point_val, nullptr, nullptr, &selected, &nosort);
+        }
     }
 
     if (modified_count)
