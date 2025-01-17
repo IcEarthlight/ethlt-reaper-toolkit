@@ -6,8 +6,6 @@
 namespace PROJECT_NAME
 {
 
-void test();
-void show_selected_midi_items();
-void show_all_midi_items();
+void clean_envelope_points();
 
 }

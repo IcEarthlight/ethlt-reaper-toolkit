@@ -235,4 +235,36 @@ void show_selected_midi_items() {
     }
 }
 
+void show_all_midi_items() {
+    HWND midi_editor = MIDIEditor_GetActive();
+    if (!midi_editor) return;
+
+    MediaItem_Take *take = MIDIEditor_GetTake(midi_editor);
+    if (!take) return;
+
+    ShowConsoleMsg("All MIDI items:\n");
+
+    double end_pos = -HUGE_VAL;
+    int note_count;
+    MIDI_CountEvts(take, &note_count, nullptr, nullptr);
+
+    for (int i = 0; i < note_count; i++) {
+        bool selected, muted;
+        double note_start_pos, note_end_pos;
+        int channel, pitch, velocity;
+        bool result = MIDI_GetNote(take, i, &selected, &muted, &note_start_pos, &note_end_pos, &channel, &pitch, &velocity);
+
+        if (!result) continue;
+        
+        ShowConsoleMsg((
+            "note_index: " + std::to_string(i) + (selected ? "[selected] " : "") +
+            "\n  note_pos: " + std::to_string(note_start_pos) + " - " + std::to_string(note_end_pos) +
+            "\n  channel: " + std::to_string(channel) +
+            " pitch: " + std::to_string(pitch) +
+            " velocity: " + std::to_string(velocity) +
+            "\n"
+        ).c_str());
+    }
+}
+
 }
