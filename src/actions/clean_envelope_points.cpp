@@ -21,138 +21,142 @@ static int handle_envelope(TrackEnvelope* env)
     std::stack<int> del_point_indices;
     std::optional<EnvPoint> last_point, second_last_point;
 
-    // delete consecutive points with the same time
-    point_count = CountEnvelopePoints(env);
-    for (int i = 0; i < point_count; i++) {
-        EnvPoint point;
-        if (!GetEnvelopePoint(env, i, &point.time, &point.value, &point.shape, nullptr, nullptr))
-            continue;
+    int autoitem_count = CountAutomationItems(env);
+    for (int i = -1; i < autoitem_count; i++) { // -1 is for underlying envelope
 
-        if (last_point.has_value() &&
-            second_last_point.has_value() &&
-            last_point->time == point.time &&
-            second_last_point->time == last_point->time
-        )
-            del_point_indices.push(i-1);
+        // delete consecutive points with the same time
+        point_count = CountEnvelopePointsEx(env, i);
+        for (int j = 0; j < point_count; j++) {
+            EnvPoint point;
+            if (!GetEnvelopePointEx(env, i, j, &point.time, &point.value, &point.shape, nullptr, nullptr))
+                continue;
 
-        second_last_point = last_point;
-        last_point = point;
-    }
+            if (last_point.has_value() &&
+                second_last_point.has_value() &&
+                last_point->time == point.time &&
+                second_last_point->time == last_point->time
+            )
+                del_point_indices.push(j-1);
 
-    del_point_count += static_cast<int>(del_point_indices.size());
-
-    while (!del_point_indices.empty()) {
-        DeleteEnvelopePointEx(env, -1, del_point_indices.top());
-        del_point_indices.pop();
-    }
-
-    last_point = std::nullopt;
-    second_last_point = std::nullopt;
-
-    // delete overlapping points
-    point_count = CountEnvelopePoints(env);
-    for (int i = 0; i < point_count; i++) {
-        EnvPoint point;
-        if (!GetEnvelopePoint(env, i, &point.time, &point.value, &point.shape, nullptr, nullptr))
-            continue;
-        
-        if (last_point.has_value() &&
-            last_point->time == point.time &&
-            last_point->value == point.value
-        )
-            del_point_indices.push(i-1);
-
-        last_point = point;
-    }
-
-    del_point_count += static_cast<int>(del_point_indices.size());
-
-    while (!del_point_indices.empty()) {
-        DeleteEnvelopePointEx(env, -1, del_point_indices.top());
-        del_point_indices.pop();
-    }
-
-    last_point = std::nullopt;
-    second_last_point = std::nullopt;
-
-    // delete consecutive points with the same value
-    point_count = CountEnvelopePoints(env);
-    for (int i = 0; i < point_count; i++) {
-        EnvPoint point;
-        if (!GetEnvelopePoint(env, i, &point.time, &point.value, &point.shape, nullptr, nullptr))
-            continue;
-
-        if (last_point.has_value() &&
-            second_last_point.has_value() &&
-            last_point->value == point.value &&
-            second_last_point->value == last_point->value
-        )
-            del_point_indices.push(i-1);
-
-        second_last_point = last_point;
-        last_point = point;
-    }
-
-    del_point_count += static_cast<int>(del_point_indices.size());
-
-    while (!del_point_indices.empty()) {
-        DeleteEnvelopePointEx(env, -1, del_point_indices.top());
-        del_point_indices.pop();
-    }
-
-    last_point = std::nullopt;
-    second_last_point = std::nullopt;
-
-    // delete unnecessary square points
-    point_count = CountEnvelopePoints(env);
-    for (int i = 0; i < point_count; i++) {
-        EnvPoint point;
-        if (!GetEnvelopePoint(env, i, &point.time, &point.value, &point.shape, nullptr, nullptr))
-            continue;
-        
-        if (last_point.has_value() &&
-            last_point->shape == 1 &&
-            point.shape == 1 &&
-            last_point->value == point.value
-        )
-            del_point_indices.push(i);
-
-        last_point = point;
-    }
-
-    del_point_count += static_cast<int>(del_point_indices.size());
-
-    while (!del_point_indices.empty()) {
-        DeleteEnvelopePointEx(env, -1, del_point_indices.top());
-        del_point_indices.pop();
-    }
-
-    last_point = std::nullopt;
-    second_last_point = std::nullopt;
-
-    // check if the tail point is necessary
-    point_count = CountEnvelopePoints(env);
-    if (point_count >= 2) {
-        EnvPoint point, tail_point;
-        if (GetEnvelopePoint(env, point_count-2, &point.time, &point.value, &point.shape, nullptr, nullptr) &&
-            GetEnvelopePoint(env, point_count-1, &tail_point.time, &tail_point.value, &tail_point.shape, nullptr, nullptr) &&
-            point.value == tail_point.value
-        ) {
-            DeleteEnvelopePointEx(env, -1, point_count-1);
-            del_point_count++;
+            second_last_point = last_point;
+            last_point = point;
         }
-    }
 
-    // check if the head point is necessary
-    point_count = CountEnvelopePoints(env);
-    if (point_count >= 2) {
-        EnvPoint head_point, point;
-        if (GetEnvelopePoint(env, 0, &head_point.time, &head_point.value, &head_point.shape, nullptr, nullptr) &&
-            GetEnvelopePoint(env, 1, &point.time, &point.value, &point.shape, nullptr, nullptr) &&
-            head_point.value == point.value
-        ) {
-            DeleteEnvelopePointEx(env, -1, 0);
-            del_point_count++;
+        del_point_count += static_cast<int>(del_point_indices.size());
+
+        while (!del_point_indices.empty()) {
+            DeleteEnvelopePointEx(env, i, del_point_indices.top());
+            del_point_indices.pop();
+        }
+
+        last_point = std::nullopt;
+        second_last_point = std::nullopt;
+
+        // delete overlapping points
+        point_count = CountEnvelopePointsEx(env, i);
+        for (int j = 0; j < point_count; j++) {
+            EnvPoint point;
+            if (!GetEnvelopePointEx(env, i, j, &point.time, &point.value, &point.shape, nullptr, nullptr))
+                continue;
+            
+            if (last_point.has_value() &&
+                last_point->time == point.time &&
+                last_point->value == point.value
+            )
+                del_point_indices.push(j-1);
+
+            last_point = point;
+        }
+
+        del_point_count += static_cast<int>(del_point_indices.size());
+
+        while (!del_point_indices.empty()) {
+            DeleteEnvelopePointEx(env, i, del_point_indices.top());
+            del_point_indices.pop();
+        }
+
+        last_point = std::nullopt;
+        second_last_point = std::nullopt;
+
+        // delete consecutive points with the same value
+        point_count = CountEnvelopePointsEx(env, i);
+        for (int j = 0; j < point_count; j++) {
+            EnvPoint point;
+            if (!GetEnvelopePointEx(env, i, j, &point.time, &point.value, &point.shape, nullptr, nullptr))
+                continue;
+
+            if (last_point.has_value() &&
+                second_last_point.has_value() &&
+                last_point->value == point.value &&
+                second_last_point->value == last_point->value
+            )
+                del_point_indices.push(j-1);
+
+            second_last_point = last_point;
+            last_point = point;
+        }
+
+        del_point_count += static_cast<int>(del_point_indices.size());
+
+        while (!del_point_indices.empty()) {
+            DeleteEnvelopePointEx(env, i, del_point_indices.top());
+            del_point_indices.pop();
+        }
+
+        last_point = std::nullopt;
+        second_last_point = std::nullopt;
+
+        // delete unnecessary square points
+        point_count = CountEnvelopePointsEx(env, i);
+        for (int j = 0; j < point_count; j++) {
+            EnvPoint point;
+            if (!GetEnvelopePointEx(env, i, j, &point.time, &point.value, &point.shape, nullptr, nullptr))
+                continue;
+            
+            if (last_point.has_value() &&
+                last_point->shape == 1 &&
+                point.shape == 1 &&
+                last_point->value == point.value
+            )
+                del_point_indices.push(j);
+
+            last_point = point;
+        }
+
+        del_point_count += static_cast<int>(del_point_indices.size());
+
+        while (!del_point_indices.empty()) {
+            DeleteEnvelopePointEx(env, i, del_point_indices.top());
+            del_point_indices.pop();
+        }
+
+        last_point = std::nullopt;
+        second_last_point = std::nullopt;
+
+        // check if the tail point is necessary
+        point_count = CountEnvelopePointsEx(env, i);
+        if (point_count >= 2) {
+            EnvPoint point, tail_point;
+            if (GetEnvelopePointEx(env, i, point_count-2, &point.time, &point.value, &point.shape, nullptr, nullptr) &&
+                GetEnvelopePointEx(env, i, point_count-1, &tail_point.time, &tail_point.value, &tail_point.shape, nullptr, nullptr) &&
+                point.value == tail_point.value
+            ) {
+                DeleteEnvelopePointEx(env, i, point_count-1);
+                del_point_count++;
+            }
+        }
+
+        // check if the head point is necessary
+        point_count = CountEnvelopePointsEx(env, i);
+        if (point_count >= 2) {
+            EnvPoint head_point, point;
+            if (GetEnvelopePointEx(env, i, 0, &head_point.time, &head_point.value, &head_point.shape, nullptr, nullptr) &&
+                GetEnvelopePointEx(env, i, 1, &point.time, &point.value, &point.shape, nullptr, nullptr) &&
+                head_point.value == point.value
+            ) {
+                DeleteEnvelopePointEx(env, i, 0);
+                del_point_count++;
+            }
         }
     }
 
