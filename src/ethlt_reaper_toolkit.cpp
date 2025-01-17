@@ -6,6 +6,7 @@
 #include "actions/clean_envelope_points.h"
 #include "actions/smart_midi_vel_adjust.h"
 #include "actions/smart_vol_adjust.h"
+#include "actions/switch_triplet_grid.h"
 #include "actions/test.h"
 
 #define STRINGIZE_DEF(x) #x
@@ -53,6 +54,9 @@ std::vector<ActionInfo> actions = {
     { 8, false, false, SectionId::Main,                "ETHLT_APPEND_DUPLICATE_MAIN",               "ethlt: Append Duplicate (Main Section)",       {0}, append_duplicate_main},
     { 9, false, false, SectionId::MidiEditor,          "ETHLT_APPEND_DUPLICATE_MIDI_EDITOR",        "ethlt: Append Duplicate (Midi Editor)",        {0}, append_duplicate_midi_editor},
     {10, false, false, SectionId::Main,                "ETHLT_CLEAN_ENVELOPE_POINTS",               "ethlt: Clean Envelope Points",                 {0}, clean_envelope_points},
+    {11, false, false, SectionId::Main,                "ETHLT_SWITCH_TRIPET_GRID_MAIN",             "ethlt: Switch Triplet Grid (Main Section)",    {0}, switch_tripet_grid},
+    {12, false, false, SectionId::MidiEditor,          "ETHLT_SWITCH_TRIPET_GRID_MIDI_EDITOR",      "ethlt: Switch Triplet Grid (Midi Editor)",     {0}, switch_tripet_grid},
+
     {11, false, false, SectionId::Main,                "ETHLT_SHOW_ALL_ENVELOPE_POINTS",            "ethlt: Show All Envelope Points",              {0}, show_all_envelope_points},
     {12, false, false, SectionId::Main,                "ETHLT_TEST_COMMAND_MAIN",                   "ethlt: Test (Main Section)",                   {0}, test},
     {13, false, false, SectionId::MidiEditor,          "ETHLT_TEST_SHOW_SELECTED_MIDI_ITEMS",       "ethlt: Show Selected MIDI Items (Midi Editor)",{0}, show_selected_midi_items},
