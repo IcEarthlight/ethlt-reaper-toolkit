@@ -166,6 +166,8 @@ void print_element_under_point(int x, int y) {
         sprintf(buf, "%s          P_EXT %s\n", buf, info);
         GetSetMediaItemInfo_String(item, "GUID", info, false);
         sprintf(buf, "%s          GUID %s\n", buf, info);
+        double pos = GetMediaItemInfo_Value(item, "D_POSITION");
+        sprintf(buf, "%s          D_POSITION %f\n", buf, pos);
         double vol = GetMediaItemInfo_Value(item, "D_VOL");
         sprintf(buf, "%s          D_VOL %f\n", buf, vol);
     } else {
@@ -198,6 +200,39 @@ void test()
         ShowConsoleMsg("MIDI Editor is active\n");
     }
     print_element_under_point(pt.x, pt.y);
+}
+
+void show_selected_midi_items() {
+    HWND midi_editor = MIDIEditor_GetActive();
+    if (!midi_editor) return;
+
+    MediaItem_Take *take = MIDIEditor_GetTake(midi_editor);
+    if (!take) return;
+
+    ShowConsoleMsg("Selected MIDI items:\n");
+
+    double end_pos = -HUGE_VAL;
+    int note_count;
+    MIDI_CountEvts(take, &note_count, nullptr, nullptr);
+
+    for (int i = 0; i < note_count; i++) {
+        bool selected, muted;
+        double note_start_pos, note_end_pos;
+        int channel, pitch, velocity;
+        bool result = MIDI_GetNote(take, i, &selected, &muted, &note_start_pos, &note_end_pos, &channel, &pitch, &velocity);
+
+        if (!result) continue;
+        if (!selected) continue;
+        
+        ShowConsoleMsg((
+            "note_index: " + std::to_string(i) +
+            "\n  note_pos: " + std::to_string(note_start_pos) + " - " + std::to_string(note_end_pos) +
+            "\n  channel: " + std::to_string(channel) +
+            " pitch: " + std::to_string(pitch) +
+            " velocity: " + std::to_string(velocity) +
+            "\n"
+        ).c_str());
+    }
 }
 
 }

@@ -5,6 +5,8 @@
 
 namespace PROJECT_NAME
 {
-    void test();
-    void show_selected_midi_items();
+
+void append_duplicate_midi_editor();
+void append_duplicate_main();
+
 }

@@ -73,8 +73,7 @@ constexpr inline bool extract_envelope_info(
     double *min_val,
     double *max_val,
     double *mid_val,
-    int *adjust_type
-) noexcept
+    int *adjust_type)
 {
     if (len < 1 || str[0] != '<')
         return false;
@@ -344,6 +343,7 @@ int handle_arrange_view(int* modified_count, char* env_type)
     char thing[12];
     MediaTrack *track = GetThingFromPoint(ptrx, ptry, thing, sizeof(thing));
     if (!track) {
+        // try to handle MIDI editor
         if (!try_to_handle_midi_editor<increase, is_fine>())
             adjust_system_volume<increase>();
         *modified_count = 0;

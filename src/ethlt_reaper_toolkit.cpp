@@ -2,8 +2,9 @@
 #include "reaper_vararg.hpp"
 #include <gsl/gsl>
 
-#include "actions/smart_vol_adjust.h"
+#include "actions/append_duplicate.h"
 #include "actions/smart_midi_vel_adjust.h"
+#include "actions/smart_vol_adjust.h"
 #include "actions/test.h"
 
 #define STRINGIZE_DEF(x) #x
@@ -29,31 +30,33 @@ enum class SectionId {
 
 struct ActionInfo {
     int command_id;
+    bool run_on_timer;  // individual timer setting for each action
     bool toggle_state;
     SectionId section_id;
     const char* command_name;
     const char* action_name;
-    bool run_on_timer;  // individual timer setting for each action
     custom_action_register_t action;
     std::function<void()> onaction; // function to call when action triggered
 };
 
 // define your actions here with individual timer settings
 std::vector<ActionInfo> actions = {
-    { 0, false, SectionId::Main,                "ETHLT_SMART_VOLUP_COMMAND_MAIN",            "ethlt: Smart Volume Up (Main Section)",        false, {0}, smart_vol_adjust<true, false>},
-    { 1, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLUP_COMMAND_MIDI_EDITOR",     "ethlt: Smart Volume Up (Midi Editor)",         false, {0}, smart_midi_vel_adjust<true, false>},
-    { 2, false, SectionId::Main,                "ETHLT_SMART_VOLDOWN_COMMAND_MAIN",          "ethlt: Smart Volume Down (Main Section)",      false, {0}, smart_vol_adjust<false, false>},
-    { 3, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLDOWN_COMMAND_MIDI_EDITOR",   "ethlt: Smart Volume Down (Midi Editor)",       false, {0}, smart_midi_vel_adjust<false, false>},
-    { 4, false, SectionId::Main,                "ETHLT_FINE_VOLUP_COMMAND_MAIN",             "ethlt: Fine Volume Up (Main Section)",         false, {0}, smart_vol_adjust<true, true>},
-    { 5, false, SectionId::MidiEditor,          "ETHLT_FINE_VOLUP_COMMAND_MIDI_EDITOR",      "ethlt: Fine Volume Up (Midi Editor)",          false, {0}, smart_midi_vel_adjust<true, true>},
-    { 6, false, SectionId::Main,                "ETHLT_FINE_VOLDOWN_COMMAND_MAIN",           "ethlt: Fine Volume Down (Main Section)",       false, {0}, smart_vol_adjust<false, true>},
-    { 7, false, SectionId::MidiEditor,          "ETHLT_FINE_VOLDOWN_COMMAND_MIDI_EDITOR",    "ethlt: Fine Volume Down (Midi Editor)",        false, {0}, smart_midi_vel_adjust<false, true>},
-    { 8, false, SectionId::Main,                "ETHLT_TEST_COMMAND_MAIN",                   "ethlt: Test (Main Section)",                   false, {0}, test},
-    { 9, false, SectionId::MainAlt,             "ETHLT_TEST_COMMAND_MAIN_ALT",               "ethlt: Test (Main Alt Section)",               false, {0}, test},
-    {10, false, SectionId::MidiEditor,          "ETHLT_TEST_COMMAND_MIDI_EDITOR",            "ethlt: Test (Midi Editor Section)",            false, {0}, test},
-    {11, false, SectionId::MidiEventListEditor, "ETHLT_TEST_COMMAND_MIDI_EVENT_LIST_EDITOR", "ethlt: Test (Midi Event List Editor Section)", false, {0}, test},
-    {12, false, SectionId::MidiInlineEditor,    "ETHLT_TEST_COMMAND_MIDI_INLINE_EDITOR",     "ethlt: Test (Midi Inline Editor Section)",     false, {0}, test},
-    {13, false, SectionId::MediaExplorer,       "ETHLT_TEST_COMMAND_MEDIA_EXPLORER",         "ethlt: Test (Media Explorer Section)",         false, {0}, test}
+    { 0, false, false, SectionId::Main,                "ETHLT_SMART_VOLUP_COMMAND_MAIN",            "ethlt: Smart Volume Up (Main Section)",        {0}, smart_vol_adjust<true, false>},
+    { 1, false, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLUP_COMMAND_MIDI_EDITOR",     "ethlt: Smart Volume Up (Midi Editor)",         {0}, smart_midi_vel_adjust<true, false>},
+    { 2, false, false, SectionId::Main,                "ETHLT_SMART_VOLDOWN_COMMAND_MAIN",          "ethlt: Smart Volume Down (Main Section)",      {0}, smart_vol_adjust<false, false>},
+    { 3, false, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLDOWN_COMMAND_MIDI_EDITOR",   "ethlt: Smart Volume Down (Midi Editor)",       {0}, smart_midi_vel_adjust<false, false>},
+    { 4, false, false, SectionId::Main,                "ETHLT_FINE_VOLUP_COMMAND_MAIN",             "ethlt: Fine Volume Up (Main Section)",         {0}, smart_vol_adjust<true, true>},
+    { 5, false, false, SectionId::MidiEditor,          "ETHLT_FINE_VOLUP_COMMAND_MIDI_EDITOR",      "ethlt: Fine Volume Up (Midi Editor)",          {0}, smart_midi_vel_adjust<true, true>},
+    { 6, false, false, SectionId::Main,                "ETHLT_FINE_VOLDOWN_COMMAND_MAIN",           "ethlt: Fine Volume Down (Main Section)",       {0}, smart_vol_adjust<false, true>},
+    { 7, false, false, SectionId::MidiEditor,          "ETHLT_FINE_VOLDOWN_COMMAND_MIDI_EDITOR",    "ethlt: Fine Volume Down (Midi Editor)",        {0}, smart_midi_vel_adjust<false, true>},
+    { 8, false, false, SectionId::Main,                "ETHLT_APPEND_DUPLICATE_MAIN",               "ethlt: Append Duplicate (Main Section)",       {0}, append_duplicate_main},
+    { 9, false, false, SectionId::MidiEditor,          "ETHLT_APPEND_DUPLICATE_MIDI_EDITOR",        "ethlt: Append Duplicate (Midi Editor)",        {0}, append_duplicate_midi_editor},
+    {10, false, false, SectionId::Main,                "ETHLT_TEST_PRINT_CURSOR_POSITION",          "ethlt: Print Cursor Position (Main Section)",  {0}, []() { ShowConsoleMsg(("Cursor Position: " + std::to_string(GetCursorPosition()) + "\n").c_str()); }},
+    {10, false, false, SectionId::Main,                "ETHLT_TEST_COMMAND_MAIN",                   "ethlt: Test (Main Section)",                   {0}, test},
+    {11, false, false, SectionId::MidiEditor,          "ETHLT_TEST_COMMAND_MIDI_EDITOR",            "ethlt: Test (Midi Editor Section)",            {0}, show_selected_midi_items},
+    {12, false, false, SectionId::MidiEventListEditor, "ETHLT_TEST_COMMAND_MIDI_EVENT_LIST_EDITOR", "ethlt: Test (Midi Event List Editor Section)", {0}, test},
+    {13, false, false, SectionId::MidiInlineEditor,    "ETHLT_TEST_COMMAND_MIDI_INLINE_EDITOR",     "ethlt: Test (Midi Inline Editor Section)",     {0}, test},
+    {14, false, false, SectionId::MediaExplorer,       "ETHLT_TEST_COMMAND_MEDIA_EXPLORER",         "ethlt: Test (Media Explorer Section)",         {0}, test}
 };
 
 // hInstance is declared in header file my_plugin.hpp

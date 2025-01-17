@@ -25,10 +25,10 @@ template<bool increase, bool is_fine>
 int handle_midi_editor()
 {
     HWND midi_editor = MIDIEditor_GetActive();
-    if (!midi_editor) return -1;
+    if (!midi_editor) return 0;
 
     MediaItem_Take *take = MIDIEditor_GetTake(midi_editor);
-    if (!take) return -1;
+    if (!take) return 0;
 
     int modified_notes_count = 0;
     int notecnt, ccevtcnt, textsyxevtcnt;
@@ -59,14 +59,13 @@ int handle_midi_editor()
 template<bool increase, bool is_fine>
 bool try_to_handle_midi_editor()
 {
-    int modified_notes_count = handle_midi_editor<increase, is_fine>();
-    if (0 < modified_notes_count) {
+    if (int n = handle_midi_editor<increase, is_fine>()) {
         Undo_OnStateChange((
             (is_fine ? (increase ? "Slightly increase " : "Slightly decrease ") :
                        (increase ? "Increase " : "Decrease ")) +
-            std::to_string(modified_notes_count) +
+            std::to_string(n) +
             " MIDI " +
-            (modified_notes_count == 1 ? "Note" : "Notes") +
+            (n == 1 ? "Note" : "Notes") +
             " Velocity"
         ).c_str());
         return true;
