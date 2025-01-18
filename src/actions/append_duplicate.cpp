@@ -130,16 +130,7 @@ void append_duplicate_midi_editor()
 void append_duplicate_main()
 {
     PreventUIRefresh(1);
-    if (int n = handle_midi_editor()) {
-        Undo_OnStateChange((
-            "Append Duplicate " +
-            std::to_string(n) +
-            " MIDI " +
-            (n == 1 ? "Note" : "Notes")
-        ).c_str());
-        ShowConsoleMsg(("Append Duplicate " + std::to_string(n) + " MIDI " + (n == 1 ? "Note" : "Notes")).c_str());
-    
-    } else if (int n = handle_arrange_view()) {
+    if (int n = handle_arrange_view()) {
         Undo_OnStateChange((
             "Append Duplicate " +
             std::to_string(n) +
