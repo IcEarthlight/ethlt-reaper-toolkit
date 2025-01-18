@@ -6,6 +6,7 @@
 namespace PROJECT_NAME
 {
 
-void switch_tripet_grid();
+void switch_triplet_main_grid();
+void switch_triplet_midi_grid();
 
 }
