@@ -72,23 +72,29 @@ static int handle_arrange_view()
     int selected_item_count = 0;
     double cur_pos = GetCursorPosition();
 
-    int item_count = CountMediaItems(nullptr);
-    for (int i = 0; i < item_count; i++) {
-        MediaItem *item = GetMediaItem(nullptr, i);
-        if (IsMediaItemSelected(item)) {
-            double pos = GetMediaItemInfo_Value(item, "D_POSITION");
-            double len = GetMediaItemInfo_Value(item, "D_LENGTH");
-            int track_id = (int)GetMediaItemInfo_Value(item, "IP_TRACKNUMBER");
-            end_pos = std::max(end_pos, pos + len);
-            min_track_id = std::min(min_track_id, track_id);
-            selected_item_count++;
+    int track_count = CountTracks(nullptr);
+    for (int i = 0; i < track_count; i++) {
+        MediaTrack *track = GetTrack(nullptr, i);
+        if (!track) continue;
+
+        int item_count = CountTrackMediaItems(track);
+        for (int j = 0; j < item_count; j++) {
+            MediaItem *item = GetTrackMediaItem(track, j);
+            if (!item) continue;
+
+            if (IsMediaItemSelected(item)) {
+                double pos = GetMediaItemInfo_Value(item, "D_POSITION");
+                double len = GetMediaItemInfo_Value(item, "D_LENGTH");
+                end_pos = std::max(end_pos, pos + len);
+                min_track_id = std::min(min_track_id, i);
+                selected_item_count++;
+            }
         }
     }
 
     if (selected_item_count == 0) return 0;
 
     // deselect all tracks
-    int track_count = CountTracks(nullptr);
     std::vector<MediaTrack*> selected_tracks;
     for (int i = 0; i < track_count; i++) {
         MediaTrack* track = GetTrack(nullptr, i);
@@ -102,6 +108,7 @@ static int handle_arrange_view()
     MediaTrack* track = GetTrack(nullptr, min_track_id);
     SetOnlyTrackSelected(track);
     Main_OnCommand(42398, 0); // Item: Paste items/tracks
+    SetTrackSelected(track, false);
 
     // reposition cursor and reselect all tracks
     SetEditCurPos(cur_pos, false, false);
