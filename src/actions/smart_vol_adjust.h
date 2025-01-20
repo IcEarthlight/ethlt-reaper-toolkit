@@ -4,8 +4,6 @@
 #include "reaper_plugin_functions.h"
 #include <string>
 
-#include "actions/smart_midi_vel_adjust.h"
-
 namespace PROJECT_NAME
 {
 
@@ -362,7 +360,7 @@ int handle_arrange_view(int *modified_count, char *env_type)
     // try to find tracks
     char thing[12];
     MediaTrack *track = GetThingFromPoint(ptrx, ptry, thing, sizeof(thing));
-    if (track && (strcmp(thing, "tcp") == 0 || strcmp(thing, "mcp") == 0)) {
+    if (track && (strncmp(thing, "tcp", 3) == 0 || strncmp(thing, "mcp", 3) == 0)) {
         // try to handle single/selected tracks
         if (IsTrackSelected(track)) {
             *modified_count = adjust_all_selected_tracks_volume<increase, is_fine>();
@@ -373,9 +371,7 @@ int handle_arrange_view(int *modified_count, char *env_type)
         return 1;
     }
 
-    // try to handle MIDI editor (not focused)
-    if (!try_to_handle_midi_editor<increase, is_fine>())
-        adjust_system_volume<increase>();
+    adjust_system_volume<increase>();
     *modified_count = 0;
 
     return 0;

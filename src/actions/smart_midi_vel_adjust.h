@@ -56,9 +56,13 @@ int handle_midi_editor()
 
 } // anonymous namespace
 
+// Adjusts selected MIDI notes' velocity in the active MIDI editor (if any)
+// @tparam increase If true, increases velocity; if false, decreases velocity
 template<bool increase, bool is_fine>
-bool try_to_handle_midi_editor()
+void smart_midi_vel_adjust()
 {
+    PreventUIRefresh(1);
+    
     if (int n = handle_midi_editor<increase, is_fine>()) {
         Undo_OnStateChange((
             (is_fine ? (increase ? "Slightly increase " : "Slightly decrease ") :
@@ -68,18 +72,7 @@ bool try_to_handle_midi_editor()
             (n == 1 ? "Note" : "Notes") +
             " Velocity"
         ).c_str());
-        return true;
     }
-    return false;
-}
-
-// Adjusts selected MIDI notes' velocity in the active MIDI editor (if any)
-// @tparam increase If true, increases velocity; if false, decreases velocity
-template<bool increase, bool is_fine>
-void smart_midi_vel_adjust()
-{
-    PreventUIRefresh(1);
-    try_to_handle_midi_editor<increase, is_fine>();
     PreventUIRefresh(-1);
     UpdateArrange();
 }
