@@ -6,10 +6,11 @@
 namespace PROJECT_NAME
 {
 
-void show_thing_under_point();
 void show_all_envelope_points();
-void show_selected_midi_items();
 void show_all_midi_items();
+void show_selected_midi_items();
+void show_thing_under_point();
+void show_track_ui();
 void test();
 
 }

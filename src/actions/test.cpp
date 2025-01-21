@@ -5,7 +5,8 @@
 namespace PROJECT_NAME
 {
 
-constexpr inline int ipow(int base, int exp) noexcept {
+constexpr inline int ipow(int base, int exp) noexcept
+{
     int result = 1;
     while (exp > 0) {
         if (exp & 1) result *= base;
@@ -80,7 +81,8 @@ constexpr inline bool extract_envelope_info(
     return false;
 }
 
-bool active_midi_editor() {
+bool active_midi_editor()
+{
     HWND hwnd = MIDIEditor_GetActive();
     if (hwnd == nullptr) {
         return false;
@@ -93,7 +95,8 @@ bool active_midi_editor() {
 }
 
 // helper function to get element under cursor
-void print_element_under_point(int x, int y) {
+void print_element_under_point(int x, int y)
+{
     char buf[1024];
     sprintf(buf, "Cursor position: %d, %d\n", x, y);
     ShowConsoleMsg(buf);
@@ -189,20 +192,76 @@ void print_element_under_point(int x, int y) {
     buf[0] = '\0'; // clear buf
 }
 
-void show_thing_under_point()
+void show_all_envelope_points()
 {
-    POINT pt;
-    if (!GetCursorPos(&pt)) {
-        ShowConsoleMsg("Failed to get cursor position\n");
-        return;
+    int track_count = CountTracks(nullptr);
+    for (int i = 0; i < track_count; i++) {
+        MediaTrack *track = GetTrack(nullptr, i);
+        if (!track) continue;
+        ShowConsoleMsg(("track: " + std::to_string(i) + "\n").c_str());
+
+
+        int env_count = CountTrackEnvelopes(track);
+        for (int j = 0; j < env_count; j++) {
+            TrackEnvelope *env = GetTrackEnvelope(track, j);
+            if (!env) continue;
+            ShowConsoleMsg(("  envelope: " + std::to_string(j) + "\n").c_str());
+
+            int point_count = CountEnvelopePoints(env);
+            for (int k = 0; k < point_count; k++) {
+                int shape;
+                double time, value, tension;
+                bool selected;
+                GetEnvelopePoint(env, k, &time, &value, &shape, &tension, &selected);
+                ShowConsoleMsg((
+                    std::to_string(k) + " " +
+                    std::to_string(time) + " " +
+                    std::to_string(value) + " " +
+                    std::to_string(shape) + " " +
+                    std::to_string(tension) + " " +
+                    (selected ? "[selected] " : "") +
+                    "\n"
+                ).c_str());
+            }
+        }
     }
-    if (active_midi_editor()) {
-        ShowConsoleMsg("MIDI Editor is active\n");
-    }
-    print_element_under_point(pt.x, pt.y);
 }
 
-void show_selected_midi_items() {
+void show_all_midi_items()
+{
+    HWND midi_editor = MIDIEditor_GetActive();
+    if (!midi_editor) return;
+
+    MediaItem_Take *take = MIDIEditor_GetTake(midi_editor);
+    if (!take) return;
+
+    ShowConsoleMsg("All MIDI items:\n");
+
+    double end_pos = -HUGE_VAL;
+    int note_count;
+    MIDI_CountEvts(take, &note_count, nullptr, nullptr);
+
+    for (int i = 0; i < note_count; i++) {
+        bool selected, muted;
+        double note_start_pos, note_end_pos;
+        int channel, pitch, velocity;
+        bool result = MIDI_GetNote(take, i, &selected, &muted, &note_start_pos, &note_end_pos, &channel, &pitch, &velocity);
+
+        if (!result) continue;
+        
+        ShowConsoleMsg((
+            "note_index: " + std::to_string(i) + (selected ? "[selected] " : "") +
+            "\n  note_pos: " + std::to_string(note_start_pos) + " - " + std::to_string(note_end_pos) +
+            "\n  channel: " + std::to_string(channel) +
+            " pitch: " + std::to_string(pitch) +
+            " velocity: " + std::to_string(velocity) +
+            "\n"
+        ).c_str());
+    }
+}
+
+void show_selected_midi_items()
+{
     HWND midi_editor = MIDIEditor_GetActive();
     if (!midi_editor) return;
 
@@ -235,70 +294,53 @@ void show_selected_midi_items() {
     }
 }
 
-void show_all_midi_items() {
-    HWND midi_editor = MIDIEditor_GetActive();
-    if (!midi_editor) return;
-
-    MediaItem_Take *take = MIDIEditor_GetTake(midi_editor);
-    if (!take) return;
-
-    ShowConsoleMsg("All MIDI items:\n");
-
-    double end_pos = -HUGE_VAL;
-    int note_count;
-    MIDI_CountEvts(take, &note_count, nullptr, nullptr);
-
-    for (int i = 0; i < note_count; i++) {
-        bool selected, muted;
-        double note_start_pos, note_end_pos;
-        int channel, pitch, velocity;
-        bool result = MIDI_GetNote(take, i, &selected, &muted, &note_start_pos, &note_end_pos, &channel, &pitch, &velocity);
-
-        if (!result) continue;
-        
-        ShowConsoleMsg((
-            "note_index: " + std::to_string(i) + (selected ? "[selected] " : "") +
-            "\n  note_pos: " + std::to_string(note_start_pos) + " - " + std::to_string(note_end_pos) +
-            "\n  channel: " + std::to_string(channel) +
-            " pitch: " + std::to_string(pitch) +
-            " velocity: " + std::to_string(velocity) +
-            "\n"
-        ).c_str());
+void show_thing_under_point()
+{
+    POINT pt;
+    if (!GetCursorPos(&pt)) {
+        ShowConsoleMsg("Failed to get cursor position\n");
+        return;
     }
+    if (active_midi_editor()) {
+        ShowConsoleMsg("MIDI Editor is active\n");
+    }
+    print_element_under_point(pt.x, pt.y);
 }
 
-void show_all_envelope_points() {
+void show_track_ui() {
     int track_count = CountTracks(nullptr);
-    for (int i = 0; i < track_count; i++) {
-        MediaTrack *track = GetTrack(nullptr, i);
-        if (!track) continue;
-        ShowConsoleMsg(("track: " + std::to_string(i) + "\n").c_str());
+    MediaTrack *track = GetTrack(nullptr, track_count - 1);
+    if (!track) return;
 
+    char buf[256];
 
-        int env_count = CountTrackEnvelopes(track);
-        for (int j = 0; j < env_count; j++) {
-            TrackEnvelope *env = GetTrackEnvelope(track, j);
-            if (!env) continue;
-            ShowConsoleMsg(("  envelope: " + std::to_string(j) + "\n").c_str());
+    #define SHOW_TRACK_UI_RECT(element) \
+        GetSetMediaTrackInfo_String(track, "P_UI_RECT:" #element, buf, false); \
+        ShowConsoleMsg((#element ": \t" + std::string(buf) + "\n").c_str());
 
-            int point_count = CountEnvelopePoints(env);
-            for (int k = 0; k < point_count; k++) {
-                int shape;
-                double time, value, tension;
-                bool selected;
-                GetEnvelopePoint(env, k, &time, &value, &shape, &tension, &selected);
-                ShowConsoleMsg((
-                    std::to_string(k) + " " +
-                    std::to_string(time) + " " +
-                    std::to_string(value) + " " +
-                    std::to_string(shape) + " " +
-                    std::to_string(tension) + " " +
-                    (selected ? "[selected] " : "") +
-                    "\n"
-                ).c_str());
-            }
-        }
-    }
+    SHOW_TRACK_UI_RECT(tcp.size)
+    SHOW_TRACK_UI_RECT(tcp.trackidx)
+    SHOW_TRACK_UI_RECT(tcp.recarm)
+    SHOW_TRACK_UI_RECT(tcp.label)
+    SHOW_TRACK_UI_RECT(tcp.volume)
+    SHOW_TRACK_UI_RECT(tcp.mute)
+    SHOW_TRACK_UI_RECT(tcp.solo)
+    SHOW_TRACK_UI_RECT(tcp.io)
+    SHOW_TRACK_UI_RECT(tcp.fx)
+    SHOW_TRACK_UI_RECT(tcp.fxbyp)
+    SHOW_TRACK_UI_RECT(tcp.fxlist)
+    // SHOW_TRACK_UI_RECT(tcp.fxlist.margin)
+    SHOW_TRACK_UI_RECT(tcp.pan)
+    SHOW_TRACK_UI_RECT(tcp.env)
+    SHOW_TRACK_UI_RECT(tcp.phase)
+    SHOW_TRACK_UI_RECT(tcp.folder)
+    SHOW_TRACK_UI_RECT(tcp.meter)
+
+    // SHOW_TRACK_UI_RECT(tcp.dragdropinfo)
+    // SHOW_TRACK_UI_RECT(tcp.fxembed)
+    // SHOW_TRACK_UI_RECT(tcp.margin)
+
+    #undef SHOW_TRACK_UI_RECT
 }
 
 void test()
