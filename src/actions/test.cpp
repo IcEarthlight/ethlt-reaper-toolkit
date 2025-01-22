@@ -215,10 +215,10 @@ void show_all_envelope_points()
                 GetEnvelopePoint(env, k, &time, &value, &shape, &tension, &selected);
                 ShowConsoleMsg((
                     std::to_string(k) + " " +
-                    std::to_string(time) + " " +
-                    std::to_string(value) + " " +
+                    precise_numstr<double, 10>(time) + " " +
+                    precise_numstr<double, 2>(value) + " " +
                     std::to_string(shape) + " " +
-                    std::to_string(tension) + " " +
+                    precise_numstr<double, 2>(tension) + " " +
                     (selected ? "[selected] " : "") +
                     "\n"
                 ).c_str());

@@ -30,6 +30,16 @@ static int handle_envelope(TrackEnvelope* env)
             EnvPoint point;
             if (!GetEnvelopePointEx(env, i, j, &point.time, &point.value, &point.shape, nullptr, nullptr))
                 continue;
+            
+            // ShowConsoleMsg((std::to_string(j) + ":\n" +
+            //     "    second_last_point: " + (second_last_point.has_value() ? floatToString(second_last_point->time) : "NaN") + "\n"
+            //     "    last_point:        " + (last_point.has_value() ? floatToString(last_point->time) : "NaN") + "\n" +
+            //     "    point:             " + floatToString(point.time) + "\n" +
+            //     (last_point.has_value() && second_last_point.has_value() ? (
+            //         std::string("    last_time == time: ") + (last_point->time == point.time ? "true" : "false") + "\n" +
+            //         "    second_time == time: " + (second_last_point->time == last_point->time ? "true" : "false") + "\n" ) : ""
+            //     ) + "\n"
+            // ).c_str());
 
             if (last_point.has_value() &&
                 second_last_point.has_value() &&
