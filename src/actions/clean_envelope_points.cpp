@@ -1,4 +1,5 @@
 #include "clean_envelope_points.h"
+#include <cmath>
 #include <optional>
 #include <stack>
 #include <string>
@@ -9,11 +10,25 @@ namespace PROJECT_NAME
 namespace
 {
 
+constexpr int IGNORE_LAST_N_BITS = 34;
+constexpr inline bool almost_equal(double a, double b) noexcept
+{
+    // mask to ignore last N bits
+    constexpr uint64_t mask = ~((1ULL << IGNORE_LAST_N_BITS) - 1);
+
+    // a union to reinterpret the double as a uint64_t
+    typedef union { double d; uint64_t i; } reinterpretable_double;
+    
+    // compare the values ignoring last N bits, directly reinterpret and mask
+    return (reinterpretable_double{a}.i & mask) == (reinterpretable_double{b}.i & mask);
+}
+
 struct EnvPoint
 {
     double time, value;
     int shape;
 };
+
 
 static int handle_envelope(TrackEnvelope* env)
 {
@@ -36,15 +51,15 @@ static int handle_envelope(TrackEnvelope* env)
             //     "    last_point:        " + (last_point.has_value() ? floatToString(last_point->time) : "NaN") + "\n" +
             //     "    point:             " + floatToString(point.time) + "\n" +
             //     (last_point.has_value() && second_last_point.has_value() ? (
-            //         std::string("    last_time == time: ") + (last_point->time == point.time ? "true" : "false") + "\n" +
-            //         "    second_time == time: " + (second_last_point->time == last_point->time ? "true" : "false") + "\n" ) : ""
+            //         std::string("    last_time == time: ") + (almost_equal(last_point->time, point.time) ? "true" : "false") + "\n" +
+            //         "    second_time == time: " + (almost_equal(second_last_point->time, last_point->time) ? "true" : "false") + "\n" ) : ""
             //     ) + "\n"
             // ).c_str());
 
             if (last_point.has_value() &&
                 second_last_point.has_value() &&
-                last_point->time == point.time &&
-                second_last_point->time == last_point->time
+                almost_equal(last_point->time, point.time) &&
+                almost_equal(second_last_point->time, last_point->time)
             )
                 del_point_indices.push(j-1);
 
@@ -70,7 +85,7 @@ static int handle_envelope(TrackEnvelope* env)
                 continue;
             
             if (last_point.has_value() &&
-                last_point->time == point.time &&
+                almost_equal(last_point->time, point.time) &&
                 last_point->value == point.value
             )
                 del_point_indices.push(j-1);
