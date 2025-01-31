@@ -10,17 +10,34 @@ namespace PROJECT_NAME
 namespace
 {
 
-constexpr int IGNORE_LAST_N_BITS = 34;
-constexpr inline bool almost_equal(double a, double b) noexcept
+union reinterpretable_double
 {
-    // mask to ignore last N bits
-    constexpr uint64_t mask = ~((1ULL << IGNORE_LAST_N_BITS) - 1);
+    double d;
+    uint64_t i;
+    struct {
+        uint64_t value : 63;
+        uint64_t sign : 1;
+    };
+    constexpr reinterpretable_double(double value) noexcept : d(value) { }
+    // constexpr reinterpretable_double(uint64_t value) noexcept : i(value) { }
+};
 
-    // a union to reinterpret the double as a uint64_t
-    typedef union { double d; uint64_t i; } reinterpretable_double;
+constexpr int IGNORE_LAST_N_BITS = 34;
+constexpr inline bool almost_equal(reinterpretable_double a, reinterpretable_double b) noexcept
+{
+    if (a.d == b.d) return true;
     
-    // compare the values ignoring last N bits, directly reinterpret and mask
-    return (reinterpretable_double{a}.i & mask) == (reinterpretable_double{b}.i & mask);
+    if (std::isfinite(a.d) && std::isfinite(b.d)) {
+        const uint64_t diff = (a.sign == b.sign) ?
+            (a.value > b.value) ?
+                (a.value - b.value) :
+                (b.value - a.value) :
+            (a.value + b.value);
+        
+        return !(diff >> IGNORE_LAST_N_BITS);
+    }
+
+    return false;
 }
 
 struct EnvPoint
