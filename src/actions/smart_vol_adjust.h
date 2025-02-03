@@ -281,7 +281,7 @@ int adjust_all_selected_tracks_volume()
     int modified_count = 0;
     for (int i = 0; i < track_count; i++) {
         MediaTrack *track = GetTrack(nullptr, i);
-        if (IsTrackSelected(track)) {
+        if (track && IsTrackSelected(track)) {
             adjust_track_volume<increase, is_fine>(track);
             modified_count++;
         }
