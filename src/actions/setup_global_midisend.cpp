@@ -1,5 +1,7 @@
 #include "setup_global_midisend.h"
 #include <string>
+#include <vector>
+#include <cstdint>
 
 namespace PROJECT_NAME
 {
@@ -81,6 +83,41 @@ MediaTrack *get_or_create_global_midisend_track()
     return send_track;
 }
 
+// create sends to all tracks except self and those already receiving
+void send_to_all_tracks(MediaTrack *send_track)
+{
+    int track_count = CountTracks(nullptr);
+    for (int i = 0; i < track_count; i++) {
+        MediaTrack *track = GetTrack(nullptr, i);
+        if (!track) continue;
+        
+        // skip if it's the source track
+        if (track == send_track) continue;
+        
+        // check if the track already receives from send_track
+        int recv_count = GetTrackNumSends(track, -1); // -1 for receives
+        bool already_linked = false;
+        for (int j = 0; j < recv_count; j++) {
+            MediaTrack* src_track = reinterpret_cast<MediaTrack*>(
+                static_cast<uintptr_t>(GetTrackSendInfo_Value(track, -1, j, "P_SRCTRACK"))
+            );
+            if (src_track == send_track) {
+                already_linked = true;
+                break;
+            }
+        }
+        if (already_linked) continue;
+
+        // create new send
+        int send_idx = CreateTrackSend(send_track, track);
+        if (send_idx >= 0) {
+            ShowConsoleMsg(("Created send to track " + std::to_string(i) + "\n").c_str());
+            SetTrackSendInfo_Value(send_track, 0, send_idx, "I_SRCCHAN", -1);  // no audio send
+            SetTrackSendInfo_Value(send_track, 0, send_idx, "I_MIDIFLAGS", 0x84);  // send MIDI channel 4 -> 4
+        }
+    }
+}
+
 } // anonymous namespace
 
 void setup_global_midisend()
@@ -88,7 +125,7 @@ void setup_global_midisend()
     MediaTrack *send_track = get_or_create_global_midisend_track();
     if (!send_track) return;
 
-    // do something
+    send_to_all_tracks(send_track);
 }
 
 } // namespace PROJECT_NAME
