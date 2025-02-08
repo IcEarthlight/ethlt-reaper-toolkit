@@ -109,7 +109,7 @@ bool OnAction(KbdSectionInfo* sec, int command, int val, int valhw, int relmode,
                 plugin_register("-timer", (void*)action_info.onaction.target<void()>()); // "reaper.atexit(shutdown)" 
             }
         } else {
-            ShowConsoleMsg(("________________________________\n" + std::string(action_info.action_name) + " called\n").c_str()); // DEBUG
+            // ShowConsoleMsg(("________________________________\n" + std::string(action_info.action_name) + " called\n").c_str()); // DEBUG
             action_info.onaction(); // Call the action-specific function
         }
         return true;
