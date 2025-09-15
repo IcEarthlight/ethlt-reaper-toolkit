@@ -2,6 +2,7 @@
 #include "config.h"
 #include <WDL/wdltypes.h> // might be unnecessary in future
 #include "reaper_plugin_functions.h"
+#include <cmath>
 #include <string>
 
 namespace PROJECT_NAME
@@ -52,7 +53,7 @@ constexpr double MIN_VOL_FACTOR = db2factor(MIN_VOL_DB);
 constexpr inline int extract_index(const char* str, const size_t len) noexcept
 {
     int n = 0;
-    for (int i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         char c = str[len - i - 1];
         if (isdigit(c))
             n += (c - '0') * ipow(10, i);
@@ -256,6 +257,12 @@ void adjust_system_volume()
     CGEventPost(kCGHIDEventTap, event); // release key
     
     CFRelease(event); // free event
+#elif defined(__linux__)
+    const std::string command = std::string("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%") + (increase ? "+" : "-");
+    int result = system(command.c_str());
+    if (result != 0) {
+        ShowConsoleMsg("Error adjusting volume.\n");
+    }
 #endif
 }
 
