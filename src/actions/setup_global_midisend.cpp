@@ -31,8 +31,10 @@ void init_global_midisend_track(MediaTrack *send_track)
     if (fx_index == -1) return;
 
     TrackFX_SetPreset(send_track, fx_index, "global midisend");
-    GetSetMediaTrackInfo_String(send_track, "P_NAME", "[Global MIDI Send]", true);
-    GetSetMediaTrackInfo_String(send_track, "P_EXT:is_global_midisend", "true", true);
+    char name[] = "[Global MIDI Send]";
+    GetSetMediaTrackInfo_String(send_track, "P_NAME", name, true);
+    char val_true[] = "true";
+    GetSetMediaTrackInfo_String(send_track, "P_EXT:is_global_midisend", val_true, true);
     GetFXEnvelope(send_track, fx_index, 3, true);
 }
 
@@ -51,7 +53,8 @@ bool is_valid_midisend_track(MediaTrack *track)
         if (TrackFX_AddByName(track, "VST: ReaControlMIDI (Cockos)", false, 0) != -1) {
             return true;
         } else {
-            GetSetMediaTrackInfo_String(track, "P_EXT:is_global_midisend", "false", true);
+            char val_false[] = "false";
+            GetSetMediaTrackInfo_String(track, "P_EXT:is_global_midisend", val_false, true);
             return false;
         }
     } else {

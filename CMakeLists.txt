@@ -95,7 +95,7 @@ endforeach()
 
 add_library(reaper-sdk INTERFACE)
 target_include_directories(reaper-sdk 
-    INTERFACE 
+    SYSTEM INTERFACE 
     ${header_paths}
     )
 target_link_libraries(reaper-sdk INTERFACE GSL)
@@ -203,14 +203,14 @@ else()
 endif()
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  # if(WIN32)
-  #   set(USER_CONFIG_DIR "$ENV{APPDATA}")
-  # elseif(APPLE)
-  #   set(USER_CONFIG_DIR "~/Library/Application Support")
-  # else()
-  #   set(USER_CONFIG_DIR "~/.config")
-  # endif()
-  set(USER_CONFIG_DIR "D:")
+  if(WIN32)
+    set(USER_CONFIG_DIR "$ENV{APPDATA}")
+  elseif(APPLE)
+    set(USER_CONFIG_DIR "~/Library/Application Support")
+  else()
+    set(USER_CONFIG_DIR "~/.config")
+  endif()
+  # set(USER_CONFIG_DIR "D:")
 
   set(CMAKE_INSTALL_PREFIX "${USER_CONFIG_DIR}/REAPER" CACHE PATH
     "REAPER resource path where to install ReaPack" FORCE)

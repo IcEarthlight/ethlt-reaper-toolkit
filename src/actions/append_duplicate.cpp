@@ -1,4 +1,6 @@
 #include "append_duplicate.h"
+#include <cmath>
+#include <climits>
 #include <string>
 #include <utility>
 #include <vector>

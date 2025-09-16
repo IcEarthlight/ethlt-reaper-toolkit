@@ -9,7 +9,7 @@ namespace
 
 static constexpr double switch_gridsize(const double gridsize) noexcept
 {
-    unsigned int denominator = unsigned int(1 / gridsize + 0.5);
+    unsigned int denominator = (unsigned int)(1 / gridsize + 0.5);
 
     if (denominator % 3) // not dividable by 3
         if (denominator % 2)

@@ -1,4 +1,6 @@
 #include "test.h"
+#include <cmath>
+#include <climits>
 #include <stdio.h>
 #include <string>
 
@@ -19,7 +21,7 @@ constexpr inline int ipow(int base, int exp) noexcept
 constexpr inline int extract_index(const char* str, const size_t len) noexcept
 {
     int n = 0;
-    for (int i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         char c = str[len - i - 1];
         if (isdigit(c))
             n += (c - '0') * ipow(10, i);
@@ -97,10 +99,9 @@ bool active_midi_editor()
 // helper function to get element under cursor
 void print_element_under_point(int x, int y)
 {
-    char buf[1024];
-    sprintf(buf, "Cursor position: %d, %d\n", x, y);
-    ShowConsoleMsg(buf);
-    buf[0] = '\0'; // clear buf
+    std::string buf;
+    buf = "Cursor position: " + std::to_string(x) + ", " + std::to_string(y) + "\n";
+    ShowConsoleMsg(buf.c_str());
 
     char info[256];
     GetMousePosition(&x, &y);
@@ -108,7 +109,7 @@ void print_element_under_point(int x, int y)
     if (track) {
         char trackName[256];
         GetTrackName(track, trackName, sizeof(trackName));
-        sprintf(buf, "GetThingFromPoint: %s %s\n", trackName, info);
+        buf = "GetThingFromPoint: " + std::string(trackName) + " " + std::string(info) + "\n";
         if (strncmp(info, "envelope", 8) == 0 || strncmp(info, "envcp", 5) == 0) {
             int envidx = extract_index(info, strlen(info));
             ShowConsoleMsg(("envidx: " + std::to_string(envidx) + "\n").c_str());
@@ -142,54 +143,51 @@ void print_element_under_point(int x, int y)
             }
         }
     } else {
-        sprintf(buf, "GetThingFromPoint: non-track %s\n", info);
+        buf = "GetThingFromPoint: non-track " + std::string(info) + "\n";
     }
-    ShowConsoleMsg(buf[0] == '\0' ? "unknown\n" : buf);
-    buf[0] = '\0'; // clear buf
+    ShowConsoleMsg(buf.empty() ? "unknown\n" : buf.c_str());
 
     int info_out = 0;
     track = GetTrackFromPoint(x, y, &info_out);
     if (track) {
         char trackName[256];
         GetTrackName(track, trackName, sizeof(trackName));
-        sprintf(buf, "GetTrackFromPoint: %s %d\n", trackName, info_out);
+        buf = "GetTrackFromPoint: " + std::string(trackName) + " " + std::to_string(info_out) + "\n";
     } else {
-        sprintf(buf, "GetTrackFromPoint: non-track %d\n", info_out);
+        buf = "GetTrackFromPoint: non-track " + std::to_string(info_out) + "\n";
     }
-    ShowConsoleMsg(buf[0] == '\0' ? "unknown\n" : buf);
-    buf[0] = '\0'; // clear buf
+    ShowConsoleMsg(buf.empty() ? "unknown\n" : buf.c_str());
 
     MediaItem_Take *take = nullptr;
     MediaItem *item = GetItemFromPoint(x, y, true, &take);
-    sprintf(buf, "GetItemFromPoint:\n");
+    buf = "GetItemFromPoint:\n";
     if (item) {
         GetSetMediaItemInfo_String(item, "P_NOTES", info, false);
-        sprintf(buf, "%sItemInfo: P_NOTES %s\n", buf, info);
+        buf += "ItemInfo: P_NOTES " + std::string(info) + "\n";
         GetSetMediaItemInfo_String(item, "P_EXT", info, false);
-        sprintf(buf, "%s          P_EXT %s\n", buf, info);
+        buf += "          P_EXT " + std::string(info) + "\n";
         GetSetMediaItemInfo_String(item, "GUID", info, false);
-        sprintf(buf, "%s          GUID %s\n", buf, info);
+        buf += "          GUID " + std::string(info) + "\n";
         double pos = GetMediaItemInfo_Value(item, "D_POSITION");
-        sprintf(buf, "%s          D_POSITION %f\n", buf, pos);
+        buf += "          D_POSITION " + std::to_string(pos) + "\n";
         double vol = GetMediaItemInfo_Value(item, "D_VOL");
-        sprintf(buf, "%s          D_VOL %f\n", buf, vol);
+        buf += "          D_VOL " + std::to_string(vol) + "\n";
     } else {
-        sprintf(buf, "%sItemInfo: None\n", buf);
+        buf += "ItemInfo: None\n";
     }
     if (take) {
         GetSetMediaItemTakeInfo_String(take, "P_NAME", info, false);
-        sprintf(buf, "%sTakeInfo: P_NAME %s\n", buf, info);
+        buf += "TakeInfo: P_NAME " + std::string(info) + "\n";
         GetSetMediaItemTakeInfo_String(take, "P_EXT", info, false);
-        sprintf(buf, "%s          P_EXT %s\n", buf, info);
+        buf += "          P_EXT " + std::string(info) + "\n";
         GetSetMediaItemTakeInfo_String(take, "GUID", info, false);
-        sprintf(buf, "%s          GUID %s\n", buf, info);
+        buf += "          GUID " + std::string(info) + "\n";
         double vol = GetMediaItemTakeInfo_Value(take, "D_VOL");
-        sprintf(buf, "%s          D_VOL %f\n", buf, vol);
+        buf += "          D_VOL " + std::to_string(vol) + "\n";
     } else {
-        sprintf(buf, "%sTakeInfo: None\n", buf);
+        buf += "TakeInfo: None\n";
     }
-    ShowConsoleMsg(buf[0] == '\0' ? "unknown\n" : buf);
-    buf[0] = '\0'; // clear buf
+    ShowConsoleMsg(buf.empty() ? "unknown\n" : buf.c_str());
 }
 
 void show_all_envelope_points()
@@ -237,7 +235,6 @@ void show_all_midi_items()
 
     ShowConsoleMsg("All MIDI items:\n");
 
-    double end_pos = -HUGE_VAL;
     int note_count;
     MIDI_CountEvts(take, &note_count, nullptr, nullptr);
 
@@ -270,7 +267,6 @@ void show_selected_midi_items()
 
     ShowConsoleMsg("Selected MIDI items:\n");
 
-    double end_pos = -HUGE_VAL;
     int note_count;
     MIDI_CountEvts(take, &note_count, nullptr, nullptr);
 
@@ -297,10 +293,7 @@ void show_selected_midi_items()
 void show_thing_under_point()
 {
     POINT pt;
-    if (!GetCursorPos(&pt)) {
-        ShowConsoleMsg("Failed to get cursor position\n");
-        return;
-    }
+    GetCursorPos(&pt);
     if (active_midi_editor()) {
         ShowConsoleMsg("MIDI Editor is active\n");
     }

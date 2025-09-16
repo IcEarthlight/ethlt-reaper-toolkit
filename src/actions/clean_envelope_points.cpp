@@ -17,7 +17,7 @@ union reinterpretable_double
     struct {
         uint64_t value : 63;
         uint64_t sign : 1;
-    };
+    } bitfield;
     constexpr reinterpretable_double(double value) noexcept : d(value) { }
     // constexpr reinterpretable_double(uint64_t value) noexcept : i(value) { }
 };
@@ -28,11 +28,11 @@ constexpr inline bool almost_equal(reinterpretable_double a, reinterpretable_dou
     if (a.d == b.d) return true;
     
     if (std::isfinite(a.d) && std::isfinite(b.d)) {
-        const uint64_t diff = (a.sign == b.sign) ?
-            (a.value > b.value) ?
-                (a.value - b.value) :
-                (b.value - a.value) :
-            (a.value + b.value);
+        const uint64_t diff = (a.bitfield.sign == b.bitfield.sign) ?
+            (a.bitfield.value > b.bitfield.value) ?
+                (a.bitfield.value - b.bitfield.value) :
+                (b.bitfield.value - a.bitfield.value) :
+            (a.bitfield.value + b.bitfield.value);
         
         return !(diff >> IGNORE_LAST_N_BITS);
     }

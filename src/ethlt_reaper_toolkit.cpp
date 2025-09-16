@@ -44,30 +44,30 @@ struct ActionInfo {
 
 // define your actions here with individual timer settings
 std::vector<ActionInfo> actions = {
-    { 0, false, false, SectionId::Main,                "ETHLT_SMART_VOLUP_COMMAND_MAIN",            "ethlt: Smart Volume Up (Main Section)",        {0}, smart_vol_adjust<true, false>},
-    { 1, false, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLUP_COMMAND_MIDI_EDITOR",     "ethlt: Smart Volume Up (Midi Editor)",         {0}, smart_midi_vel_adjust<true, false>},
-    { 2, false, false, SectionId::Main,                "ETHLT_SMART_VOLDOWN_COMMAND_MAIN",          "ethlt: Smart Volume Down (Main Section)",      {0}, smart_vol_adjust<false, false>},
-    { 3, false, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLDOWN_COMMAND_MIDI_EDITOR",   "ethlt: Smart Volume Down (Midi Editor)",       {0}, smart_midi_vel_adjust<false, false>},
-    { 4, false, false, SectionId::Main,                "ETHLT_FINE_VOLUP_COMMAND_MAIN",             "ethlt: Fine Volume Up (Main Section)",         {0}, smart_vol_adjust<true, true>},
-    { 5, false, false, SectionId::MidiEditor,          "ETHLT_FINE_VOLUP_COMMAND_MIDI_EDITOR",      "ethlt: Fine Volume Up (Midi Editor)",          {0}, smart_midi_vel_adjust<true, true>},
-    { 6, false, false, SectionId::Main,                "ETHLT_FINE_VOLDOWN_COMMAND_MAIN",           "ethlt: Fine Volume Down (Main Section)",       {0}, smart_vol_adjust<false, true>},
-    { 7, false, false, SectionId::MidiEditor,          "ETHLT_FINE_VOLDOWN_COMMAND_MIDI_EDITOR",    "ethlt: Fine Volume Down (Midi Editor)",        {0}, smart_midi_vel_adjust<false, true>},
-    { 8, false, false, SectionId::Main,                "ETHLT_APPEND_DUPLICATE_MAIN",               "ethlt: Append Duplicate (Main Section)",       {0}, append_duplicate_main},
-    { 9, false, false, SectionId::MidiEditor,          "ETHLT_APPEND_DUPLICATE_MIDI_EDITOR",        "ethlt: Append Duplicate (Midi Editor)",        {0}, append_duplicate_midi_editor},
-    {10, false, false, SectionId::Main,                "ETHLT_CLEAN_ENVELOPE_POINTS",               "ethlt: Clean Envelope Points",                 {0}, clean_envelope_points},
-    {11, false, false, SectionId::Main,                "ETHLT_SWITCH_TRIPET_GRID_MAIN",             "ethlt: Switch Triplet Grid (Main Section)",    {0}, switch_triplet_main_grid},
-    {12, false, false, SectionId::MidiEditor,          "ETHLT_SWITCH_TRIPET_GRID_MIDI_EDITOR",      "ethlt: Switch Triplet Grid (Midi Editor)",     {0}, switch_triplet_midi_grid},
-    {13, false, false, SectionId::Main,                "ETHLT_SETUP_GLOBAL_MIDISEND",               "ethlt: Create/Update Global MIDI Send Track", {0}, setup_global_midisend},
+    { 0, false, false, SectionId::Main,                "ETHLT_SMART_VOLUP_COMMAND_MAIN",            "ethlt: Smart Volume Up (Main Section)",         {}, smart_vol_adjust<true, false>},
+    { 1, false, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLUP_COMMAND_MIDI_EDITOR",     "ethlt: Smart Volume Up (Midi Editor)",          {}, smart_midi_vel_adjust<true, false>},
+    { 2, false, false, SectionId::Main,                "ETHLT_SMART_VOLDOWN_COMMAND_MAIN",          "ethlt: Smart Volume Down (Main Section)",       {}, smart_vol_adjust<false, false>},
+    { 3, false, false, SectionId::MidiEditor,          "ETHLT_SMART_VOLDOWN_COMMAND_MIDI_EDITOR",   "ethlt: Smart Volume Down (Midi Editor)",        {}, smart_midi_vel_adjust<false, false>},
+    { 4, false, false, SectionId::Main,                "ETHLT_FINE_VOLUP_COMMAND_MAIN",             "ethlt: Fine Volume Up (Main Section)",          {}, smart_vol_adjust<true, true>},
+    { 5, false, false, SectionId::MidiEditor,          "ETHLT_FINE_VOLUP_COMMAND_MIDI_EDITOR",      "ethlt: Fine Volume Up (Midi Editor)",           {}, smart_midi_vel_adjust<true, true>},
+    { 6, false, false, SectionId::Main,                "ETHLT_FINE_VOLDOWN_COMMAND_MAIN",           "ethlt: Fine Volume Down (Main Section)",        {}, smart_vol_adjust<false, true>},
+    { 7, false, false, SectionId::MidiEditor,          "ETHLT_FINE_VOLDOWN_COMMAND_MIDI_EDITOR",    "ethlt: Fine Volume Down (Midi Editor)",         {}, smart_midi_vel_adjust<false, true>},
+    { 8, false, false, SectionId::Main,                "ETHLT_APPEND_DUPLICATE_MAIN",               "ethlt: Append Duplicate (Main Section)",        {}, append_duplicate_main},
+    { 9, false, false, SectionId::MidiEditor,          "ETHLT_APPEND_DUPLICATE_MIDI_EDITOR",        "ethlt: Append Duplicate (Midi Editor)",         {}, append_duplicate_midi_editor},
+    {10, false, false, SectionId::Main,                "ETHLT_CLEAN_ENVELOPE_POINTS",               "ethlt: Clean Envelope Points",                  {}, clean_envelope_points},
+    {11, false, false, SectionId::Main,                "ETHLT_SWITCH_TRIPET_GRID_MAIN",             "ethlt: Switch Triplet Grid (Main Section)",     {}, switch_triplet_main_grid},
+    {12, false, false, SectionId::MidiEditor,          "ETHLT_SWITCH_TRIPET_GRID_MIDI_EDITOR",      "ethlt: Switch Triplet Grid (Midi Editor)",      {}, switch_triplet_midi_grid},
+    {13, false, false, SectionId::Main,                "ETHLT_SETUP_GLOBAL_MIDISEND",               "ethlt: Create/Update Global MIDI Send Track",   {}, setup_global_midisend},
 
-    {14, false, false, SectionId::Main,                "ETHLT_SHOW_THING_UNDER_POINT",              "ethlt: Show Thing Under Point",                {0}, show_thing_under_point},
-    {15, false, false, SectionId::Main,                "ETHLT_SHOW_ALL_ENVELOPE_POINTS",            "ethlt: Show All Envelope Points",              {0}, show_all_envelope_points},
-    {16, false, false, SectionId::Main,                "ETHLT_TEST_COMMAND_MAIN",                   "ethlt: Test (Main Section)",                   {0}, test},
-    {17, false, false, SectionId::MidiEditor,          "ETHLT_TEST_SHOW_SELECTED_MIDI_ITEMS",       "ethlt: Show Selected MIDI Items (Midi Editor)",{0}, show_selected_midi_items},
-    {18, false, false, SectionId::MidiEditor,          "ETHLT_TEST_SHOW_ALL_MIDI_ITEMS",            "ethlt: Show All MIDI Items (Midi Editor)",     {0}, show_all_midi_items},
-    {19, false, false, SectionId::Main,                "ETHLT_TEST_SHOW_TRACK_UI",                  "ethlt: Show Track UI (Main Section)",          {0}, show_track_ui},
-    {20, false, false, SectionId::MidiEventListEditor, "ETHLT_TEST_COMMAND_MIDI_EVENT_LIST_EDITOR", "ethlt: Test (Midi Event List Editor Section)", {0}, test},
-    {21, false, false, SectionId::MidiInlineEditor,    "ETHLT_TEST_COMMAND_MIDI_INLINE_EDITOR",     "ethlt: Test (Midi Inline Editor Section)",     {0}, test},
-    {22, false, false, SectionId::MediaExplorer,       "ETHLT_TEST_COMMAND_MEDIA_EXPLORER",         "ethlt: Test (Media Explorer Section)",         {0}, test}
+    {14, false, false, SectionId::Main,                "ETHLT_SHOW_THING_UNDER_POINT",              "ethlt: Show Thing Under Point",                 {}, show_thing_under_point},
+    {15, false, false, SectionId::Main,                "ETHLT_SHOW_ALL_ENVELOPE_POINTS",            "ethlt: Show All Envelope Points",               {}, show_all_envelope_points},
+    {16, false, false, SectionId::Main,                "ETHLT_TEST_COMMAND_MAIN",                   "ethlt: Test (Main Section)",                    {}, test},
+    {17, false, false, SectionId::MidiEditor,          "ETHLT_TEST_SHOW_SELECTED_MIDI_ITEMS",       "ethlt: Show Selected MIDI Items (Midi Editor)", {}, show_selected_midi_items},
+    {18, false, false, SectionId::MidiEditor,          "ETHLT_TEST_SHOW_ALL_MIDI_ITEMS",            "ethlt: Show All MIDI Items (Midi Editor)",      {}, show_all_midi_items},
+    {19, false, false, SectionId::Main,                "ETHLT_TEST_SHOW_TRACK_UI",                  "ethlt: Show Track UI (Main Section)",           {}, show_track_ui},
+    {20, false, false, SectionId::MidiEventListEditor, "ETHLT_TEST_COMMAND_MIDI_EVENT_LIST_EDITOR", "ethlt: Test (Midi Event List Editor Section)",  {}, test},
+    {21, false, false, SectionId::MidiInlineEditor,    "ETHLT_TEST_COMMAND_MIDI_INLINE_EDITOR",     "ethlt: Test (Midi Inline Editor Section)",      {}, test},
+    {22, false, false, SectionId::MediaExplorer,       "ETHLT_TEST_COMMAND_MEDIA_EXPLORER",         "ethlt: Test (Media Explorer Section)",          {}, test}
 };
 
 // hInstance is declared in header file my_plugin.hpp
