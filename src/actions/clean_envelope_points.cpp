@@ -14,26 +14,32 @@ union reinterpretable_double
 {
     double d;
     uint64_t i;
-    struct {
+
+    struct
+    {
         uint64_t value : 63;
         uint64_t sign : 1;
     } bitfield;
+
     constexpr reinterpretable_double(double value) noexcept : d(value) { }
+
     // constexpr reinterpretable_double(uint64_t value) noexcept : i(value) { }
 };
 
 constexpr int IGNORE_LAST_N_BITS = 34;
+
 constexpr inline bool almost_equal(reinterpretable_double a, reinterpretable_double b) noexcept
 {
-    if (a.d == b.d) return true;
-    
+    if (a.d == b.d)
+        return true;
+
     if (std::isfinite(a.d) && std::isfinite(b.d)) {
-        const uint64_t diff = (a.bitfield.sign == b.bitfield.sign) ?
-            (a.bitfield.value > b.bitfield.value) ?
-                (a.bitfield.value - b.bitfield.value) :
-                (b.bitfield.value - a.bitfield.value) :
-            (a.bitfield.value + b.bitfield.value);
-        
+        const uint64_t diff = (a.bitfield.sign == b.bitfield.sign)
+                                  ? (a.bitfield.value > b.bitfield.value)
+                                        ? (a.bitfield.value - b.bitfield.value)
+                                        : (b.bitfield.value - a.bitfield.value)
+                                  : (a.bitfield.value + b.bitfield.value);
+
         return !(diff >> IGNORE_LAST_N_BITS);
     }
 
@@ -46,8 +52,7 @@ struct EnvPoint
     int shape;
 };
 
-
-static int handle_envelope(TrackEnvelope* env)
+static int handle_envelope(TrackEnvelope *env)
 {
     int point_count, del_point_count = 0;
     std::stack<int> del_point_indices;
@@ -60,9 +65,10 @@ static int handle_envelope(TrackEnvelope* env)
         point_count = CountEnvelopePointsEx(env, i);
         for (int j = 0; j < point_count; j++) {
             EnvPoint point;
-            if (!GetEnvelopePointEx(env, i, j, &point.time, &point.value, &point.shape, nullptr, nullptr))
+            if (!GetEnvelopePointEx(env, i, j, &point.time, &point.value, &point.shape, nullptr,
+                                    nullptr))
                 continue;
-            
+
             // ShowConsoleMsg((std::to_string(j) + ":\n" +
             //     "    second_last_point: " + (second_last_point.has_value() ? floatToString(second_last_point->time) : "NaN") + "\n"
             //     "    last_point:        " + (last_point.has_value() ? floatToString(last_point->time) : "NaN") + "\n" +
@@ -73,12 +79,10 @@ static int handle_envelope(TrackEnvelope* env)
             //     ) + "\n"
             // ).c_str());
 
-            if (last_point.has_value() &&
-                second_last_point.has_value() &&
+            if (last_point.has_value() && second_last_point.has_value() &&
                 almost_equal(last_point->time, point.time) &&
-                almost_equal(second_last_point->time, last_point->time)
-            )
-                del_point_indices.push(j-1);
+                almost_equal(second_last_point->time, last_point->time))
+                del_point_indices.push(j - 1);
 
             second_last_point = last_point;
             last_point = point;
@@ -98,14 +102,13 @@ static int handle_envelope(TrackEnvelope* env)
         point_count = CountEnvelopePointsEx(env, i);
         for (int j = 0; j < point_count; j++) {
             EnvPoint point;
-            if (!GetEnvelopePointEx(env, i, j, &point.time, &point.value, &point.shape, nullptr, nullptr))
+            if (!GetEnvelopePointEx(env, i, j, &point.time, &point.value, &point.shape, nullptr,
+                                    nullptr))
                 continue;
-            
-            if (last_point.has_value() &&
-                almost_equal(last_point->time, point.time) &&
-                last_point->value == point.value
-            )
-                del_point_indices.push(j-1);
+
+            if (last_point.has_value() && almost_equal(last_point->time, point.time) &&
+                last_point->value == point.value)
+                del_point_indices.push(j - 1);
 
             last_point = point;
         }
@@ -124,15 +127,13 @@ static int handle_envelope(TrackEnvelope* env)
         point_count = CountEnvelopePointsEx(env, i);
         for (int j = 0; j < point_count; j++) {
             EnvPoint point;
-            if (!GetEnvelopePointEx(env, i, j, &point.time, &point.value, &point.shape, nullptr, nullptr))
+            if (!GetEnvelopePointEx(env, i, j, &point.time, &point.value, &point.shape, nullptr,
+                                    nullptr))
                 continue;
 
-            if (last_point.has_value() &&
-                second_last_point.has_value() &&
-                last_point->value == point.value &&
-                second_last_point->value == last_point->value
-            )
-                del_point_indices.push(j-1);
+            if (last_point.has_value() && second_last_point.has_value() &&
+                last_point->value == point.value && second_last_point->value == last_point->value)
+                del_point_indices.push(j - 1);
 
             second_last_point = last_point;
             last_point = point;
@@ -152,14 +153,12 @@ static int handle_envelope(TrackEnvelope* env)
         point_count = CountEnvelopePointsEx(env, i);
         for (int j = 0; j < point_count; j++) {
             EnvPoint point;
-            if (!GetEnvelopePointEx(env, i, j, &point.time, &point.value, &point.shape, nullptr, nullptr))
+            if (!GetEnvelopePointEx(env, i, j, &point.time, &point.value, &point.shape, nullptr,
+                                    nullptr))
                 continue;
-            
-            if (last_point.has_value() &&
-                last_point->shape == 1 &&
-                point.shape == 1 &&
-                last_point->value == point.value
-            )
+
+            if (last_point.has_value() && last_point->shape == 1 && point.shape == 1 &&
+                last_point->value == point.value)
                 del_point_indices.push(j);
 
             last_point = point;
@@ -179,11 +178,13 @@ static int handle_envelope(TrackEnvelope* env)
         point_count = CountEnvelopePointsEx(env, i);
         if (point_count >= 2) {
             EnvPoint point, tail_point;
-            if (GetEnvelopePointEx(env, i, point_count-2, &point.time, &point.value, &point.shape, nullptr, nullptr) &&
-                GetEnvelopePointEx(env, i, point_count-1, &tail_point.time, &tail_point.value, &tail_point.shape, nullptr, nullptr) &&
-                point.value == tail_point.value
-            ) {
-                DeleteEnvelopePointEx(env, i, point_count-1);
+            if (GetEnvelopePointEx(env, i, point_count - 2, &point.time, &point.value, &point.shape,
+                                   nullptr, nullptr) &&
+                GetEnvelopePointEx(env, i, point_count - 1, &tail_point.time, &tail_point.value,
+                                   &tail_point.shape, nullptr, nullptr) &&
+                point.value == tail_point.value)
+            {
+                DeleteEnvelopePointEx(env, i, point_count - 1);
                 del_point_count++;
             }
         }
@@ -192,10 +193,12 @@ static int handle_envelope(TrackEnvelope* env)
         point_count = CountEnvelopePointsEx(env, i);
         if (point_count >= 2) {
             EnvPoint head_point, point;
-            if (GetEnvelopePointEx(env, i, 0, &head_point.time, &head_point.value, &head_point.shape, nullptr, nullptr) &&
-                GetEnvelopePointEx(env, i, 1, &point.time, &point.value, &point.shape, nullptr, nullptr) &&
-                head_point.value == point.value
-            ) {
+            if (GetEnvelopePointEx(env, i, 0, &head_point.time, &head_point.value, &head_point.shape,
+                                   nullptr, nullptr) &&
+                GetEnvelopePointEx(env, i, 1, &point.time, &point.value, &point.shape, nullptr,
+                                   nullptr) &&
+                head_point.value == point.value)
+            {
                 DeleteEnvelopePointEx(env, i, 0);
                 del_point_count++;
             }
@@ -204,7 +207,7 @@ static int handle_envelope(TrackEnvelope* env)
 
     if (del_point_count)
         Envelope_SortPoints(env);
-    
+
     return del_point_count;
 }
 
@@ -215,13 +218,15 @@ static int handle_all_track_envelopes()
     int track_count = CountTracks(nullptr);
     for (int i = 0; i < track_count; i++) {
         MediaTrack *track = GetTrack(nullptr, i);
-        if (!track) continue;
+        if (!track)
+            continue;
 
         // handle track envelopes
         int env_count = CountTrackEnvelopes(track);
         for (int j = 0; j < env_count; j++) {
             TrackEnvelope *env = GetTrackEnvelope(track, j);
-            if (!env) continue;
+            if (!env)
+                continue;
             del_point_count += handle_envelope(env);
         }
 
@@ -229,18 +234,21 @@ static int handle_all_track_envelopes()
         int item_count = CountTrackMediaItems(track);
         for (int j = 0; j < item_count; j++) {
             MediaItem *item = GetTrackMediaItem(track, j);
-            if (!item) continue;
+            if (!item)
+                continue;
 
             int take_count = CountTakes(item);
             for (int k = 0; k < take_count; k++) {
                 MediaItem_Take *take = GetMediaItemTake(item, k);
-                if (!take) continue;
+                if (!take)
+                    continue;
 
                 int take_env_count = CountTakeEnvelopes(take);
                 for (int l = 0; l < take_env_count; l++) {
                     TrackEnvelope *env = GetTakeEnvelope(take, l);
-                    if (!env) continue;
-                    
+                    if (!env)
+                        continue;
+
                     del_point_count += handle_envelope(env);
                 }
             }
@@ -255,12 +263,10 @@ static int handle_all_track_envelopes()
 void clean_envelope_points()
 {
     PreventUIRefresh(1);
-    
+
     if (int n = handle_all_track_envelopes())
-        Undo_OnStateChange((
-            "Clean " + std::to_string(n) +
-            (n == 1 ? " Envelope Point" : " Envelope Points")
-        ).c_str());
+        Undo_OnStateChange(
+            ("Clean " + std::to_string(n) + (n == 1 ? " Envelope Point" : " Envelope Points")).c_str());
 
     PreventUIRefresh(-1);
     UpdateArrange();

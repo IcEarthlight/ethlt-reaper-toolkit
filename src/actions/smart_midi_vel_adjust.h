@@ -1,7 +1,7 @@
 #pragma once
 #include "config.h"
-#include <WDL/wdltypes.h> // might be unnecessary in future
 #include "reaper_plugin_functions.h"
+#include <WDL/wdltypes.h> // might be unnecessary in future
 #include <string>
 
 namespace PROJECT_NAME
@@ -14,21 +14,23 @@ template<bool increase, bool is_fine>
 inline int adjust_velocity(int vel) noexcept
 {
     if (is_fine)
-        return increase ? std::min(0x7F, (((vel+1) >> 2) + 1) << 2) :
-                          std::max(1,    (((vel+3) >> 2) - 1) << 2);
+        return increase ? std::min(0x7F, (((vel + 1) >> 2) + 1) << 2)
+                        : std::max(1, (((vel + 3) >> 2) - 1) << 2);
     else
-        return increase ? std::min(0x7F, (((vel+7) >> 4) + 1) << 4) :
-                          std::max(1,    (((vel+9) >> 4) - 1) << 4);
+        return increase ? std::min(0x7F, (((vel + 7) >> 4) + 1) << 4)
+                        : std::max(1, (((vel + 9) >> 4) - 1) << 4);
 }
 
 template<bool increase, bool is_fine>
 int handle_midi_editor()
 {
     HWND midi_editor = MIDIEditor_GetActive();
-    if (!midi_editor) return 0;
+    if (!midi_editor)
+        return 0;
 
     MediaItem_Take *take = MIDIEditor_GetTake(midi_editor);
-    if (!take) return 0;
+    if (!take)
+        return 0;
 
     int modified_notes_count = 0;
     int notecnt, ccevtcnt, textsyxevtcnt;
@@ -38,14 +40,18 @@ int handle_midi_editor()
     for (int i = 0; i < notecnt; i++) {
         bool selected;
         int vel;
-        bool result = MIDI_GetNote(take, i, &selected, nullptr, nullptr, nullptr, nullptr, nullptr, &vel);
+        bool result =
+            MIDI_GetNote(take, i, &selected, nullptr, nullptr, nullptr, nullptr, nullptr, &vel);
 
-        if (!result) continue;
-        if (!selected) continue;
+        if (!result)
+            continue;
+        if (!selected)
+            continue;
 
         modified_notes_count++;
         int new_vel = adjust_velocity<increase, is_fine>(vel);
-        MIDI_SetNote(take, i, &selected, nullptr, nullptr, nullptr, nullptr, nullptr, &new_vel, &NOSORT_TRUE);
+        MIDI_SetNote(take, i, &selected, nullptr, nullptr, nullptr, nullptr, nullptr, &new_vel,
+                     &NOSORT_TRUE);
     }
 
     if (modified_notes_count)
@@ -62,16 +68,12 @@ template<bool increase, bool is_fine>
 void smart_midi_vel_adjust()
 {
     PreventUIRefresh(1);
-    
+
     if (int n = handle_midi_editor<increase, is_fine>()) {
-        Undo_OnStateChange((
-            (is_fine ? (increase ? "Slightly increase " : "Slightly decrease ") :
-                       (increase ? "Increase " : "Decrease ")) +
-            std::to_string(n) +
-            " MIDI " +
-            (n == 1 ? "Note" : "Notes") +
-            " Velocity"
-        ).c_str());
+        Undo_OnStateChange(((is_fine ? (increase ? "Slightly increase " : "Slightly decrease ")
+                                     : (increase ? "Increase " : "Decrease ")) +
+                            std::to_string(n) + " MIDI " + (n == 1 ? "Note" : "Notes") + " Velocity")
+                               .c_str());
     }
     PreventUIRefresh(-1);
     UpdateArrange();

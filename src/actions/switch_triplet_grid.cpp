@@ -33,10 +33,12 @@ void switch_triplet_main_grid()
 void switch_triplet_midi_grid()
 {
     HWND midi_editor = MIDIEditor_GetActive();
-    if (!midi_editor) return;
+    if (!midi_editor)
+        return;
 
     MediaItem_Take *take = MIDIEditor_GetTake(midi_editor);
-    if (!take) return;
+    if (!take)
+        return;
 
     double gridsize = MIDI_GetGrid(take, nullptr, nullptr) / 4;
     gridsize = switch_gridsize(gridsize);
